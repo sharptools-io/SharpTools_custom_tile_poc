@@ -80,7 +80,7 @@ The first step is to create a Spotify app that is to be used to integrate with y
 
 * Take a note of the received access_token and refresh_token, as these will be needed in the custom tile settings.
 
-### Create Spotify Developer App
+### Create Custom Tile in SharpTools
 * Navigate to [SharpTools User Page](https://sharptools.io/user), tap the user menu drop down and select "Developer Tools"
 * Create a Custom Tile. Fill in the custom tile name, and choose `HTML` in the Type field.
 * Hit "Add Settings" and add the following settings. (The key value must be exactly the same as shown in the screenshot.)
