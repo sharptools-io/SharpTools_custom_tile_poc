@@ -88,7 +88,7 @@ The first step is to create a Spotify app that is to be used to integrate with y
   ![Custom Tile Settings](/assets/configure_custom_tile.png)
 
 * Set default dimension to `3 x 3`   
-* Copy & paste the HTML code from source.html to the page and hit "SAVE"
+* Copy & paste the HTML code from `source.html` to the page and hit "SAVE"
 
 ### Deploy Custom Tile
 * Go to the desired dashboard, Edit, and Add Item. Tap "Custom Tile" in the Other section. 

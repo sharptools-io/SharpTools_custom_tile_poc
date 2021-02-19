@@ -1,3 +1,9 @@
+<!-- README
+    This is the simplified version using James's Spotify app to Auth. 
+    - Auth page https://spotify-demo-auth.glitch.me/
+    - Only need accessToken and refreshToken keys in Custom Tile.     
+-->
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
 <!--
@@ -150,14 +156,10 @@ stio.ready(function(data){
 function getNewToken(){
   console.log("Refreshing token");
   return new Promise(function(resolve, reject){
-    axios.post(`https://accounts.spotify.com/api/token`,  
-      `grant_type=refresh_token&refresh_token=${userSettings.refreshToken}`,
-      {
-        headers: {
-          "Authorization": "Basic " + btoa(userSettings.clientId + ":" + userSettings.clientSecret),
-          "content-Type": "application/x-www-form-urlencoded"
-        }
+    axios.post(`https://spotify-demo-auth.glitch.me/token`,  
+      {refreshToken: userSettings.refreshToken}, {}      
       }).then(function(res){
+        console.log(res);
         if(res && res.data && res.data.access_token){
           console.log("Received new token");
           userSettings.token = res.data.access_token;
@@ -274,12 +276,13 @@ function getCurrPlayback(){
           ctrlPause.style.display = "block";
           //Schedule the polling task
           if(spotifyRefreshTimer == null) 
-            schedulePlaybackRefresh();
+            spotifyRefreshTimer = schedulePlaybackRefresh();
         }
         else{
           spotifyData.status = "pause";          
           ctrlPlay.style.display = "block";
-          ctrlPause.style.display = "none";          
+          ctrlPause.style.display = "none";
+          console.log("clear refresh schedule");
           //Stop the playback polling schedule since it is not playing now
           if(spotifyRefreshTimer != null) {
             console.log(`clear refresh schedule - ${spotifyRefreshTimer }`);
