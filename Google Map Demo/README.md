@@ -6,11 +6,11 @@ This demo uses Hubitat Maker API to retrieve the device's geolocation (latitude 
 
 ![Quick View](/Google%20Map%20Demo/assets/location_tracker_tile.png)
 
-Please note that this is using a Hubitat community developed smartapp and device driver to access Life360 geolocation info. For SmartThings user, the new SmartThings REST API doesn't allow custom device driver, so you may have to access Life360 API directly to get the latitude and longitude info. See below for the detailed information and these implementation are not the "official" connection on either platform.
+Please note that this is using a Hubitat community developed smartapp and device driver to access Life360 geolocation info. For SmartThings users, the community developed device driver needs to be updated with the new Custom Capability before the new SmartThings REST API can retrieve these custom attributes. Or the alternative option is to access Life360 API directly to get the latitude and longitude info. See below for the detailed information and these implementation are not the "official" connection on either platform.
 
 * [Hubitat Community Developed Life360 Smartapp & Device Driver - by bptworld](https://github.com/bptworld/Hubitat/tree/master/Ported)
 
-* [SmartThings Community Developed Life360 Smartapp - by tmleafs](https://github.com/tmleafs/life360-smartthings-refresh/tree/master/smartapps/tmleafs/life360-connect.src). (This may be a quick reference if you want to reverse engineer and access Life360 API directly.)
+* [SmartThings Community Developed Life360 Smartapp - by tmleafs](https://github.com/tmleafs/life360-smartthings-refresh/tree/master/smartapps/tmleafs/life360-connect.src).
 
 
 ## Getting Started
