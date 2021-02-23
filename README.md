@@ -1,7 +1,7 @@
-# PharpTools Custom Tile POC/Demo
+# SharpTools Custom Tile POC/Demo
 
 ## Overview
-This is a proof-of-concept project to demo what can you do with SharpTools Custom Tile feature. This is not an offical integration with other service(s), but just to show the integration possibilities.
+This is a proof-of-concept project to demo what can you do with the SharpTools Custom Tile feature. This is not an offical integration with other service(s), but just to show the integration possibilities.
 
 ## Spotify Demo
 Integration with Spotify using Spotify Developer App and API to show the playlists, devices, playback info and the basic controls in the tile. 
@@ -18,7 +18,7 @@ Uses Hubitat Maker API to retrieve Life360 device's geolocation and display in G
 See details [here](/Google%20Map%20Demo/README.md) 👈
 
 ## COVID19 & Google Line Chart Demo
-Reireve COVID19 data from [DISEASE.SH], and display the cases Google Line Chart.
+Reireve COVID19 data from [DISEASE.SH], and display the cases in a Google Line Chart.
 ![Quick View](/Google%20Line%20Chart%20Demo/assets/covid_chart_tile.png)
 
 See details [here](/Google%20Line%20Chart%20Demo/README.md) 👈
