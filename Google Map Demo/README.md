@@ -15,13 +15,13 @@ Please note that this is using a Hubitat community developed smartapp and device
 
 ## Getting Started
 
-#### Create Google Cloud Project
+### Create Google Cloud Project
 Follow the detailed steps in [Getting started with Google Maps Platform](https://developers.google.com/maps/gmp-get-started) to create a project and enable APIs & API Key
 
 Google allows $200 recurring monthly credit. 😀 
 (See [billing info](https://developers.google.com/maps/billing-credits) for details.)
 
-#### Enable Hubitat Maker API 
+### Enable Hubitat Maker API 
 Follow the steps below to enable Maker API in Hubitat admin page.
 [Maker API](https://docs.hubitat.com/index.php?title=Maker_API)
 * Select the devices that can be controled using this Maker API
@@ -29,7 +29,7 @@ Follow the steps below to enable Maker API in Hubitat admin page.
 * Add "https://api.sharptools.io" in the **Allowed Hosts (for CORS)** field (to be updated)
 * Scroll down and copy the Access Token generated
 
-#### Create Custom Tile
+### Create Custom Tile
 * Go to Developer Tools in SharpTools user dropdown
 * Create a custom tile
     * Select "HTML" as Type
@@ -41,7 +41,7 @@ Follow the steps below to enable Maker API in Hubitat admin page.
     * Set default dimensons to 2x2
     * Copy & paste the code from [here](/Google%20Map%20Demo/source.html)
 
-#### Deploy Custom Tile
+### Deploy Custom Tile
 * Go to the desired dashboard, Edit, and Add Item. Tap "Custom Tile" in the Other section and add this custom tile.
 
 * Edit the tile and fill-in the Avatar Image Url, Hubitat API Token and Google MAP API Key from previous steps. 
@@ -51,4 +51,4 @@ Follow the steps below to enable Maker API in Hubitat admin page.
 * Save
 
 
-#### Done
+### Done
