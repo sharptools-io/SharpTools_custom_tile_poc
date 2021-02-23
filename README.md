@@ -18,7 +18,7 @@ Uses Hubitat Maker API to retrieve Life360 device's geolocation and display in G
 See details [here](/Google%20Map%20Demo/README.md) 👈
 
 ## COVID19 & Google Line Chart Demo
-Reireve COVID19 data from [DISEASE.SH], and display the cases Google Line Chart.
+Retrieve COVID19 data from [DISEASE.SH], and display the cases Google Line Chart.
 ![Quick View](/Google%20Line%20Chart%20Demo/assets/covid_chart_tile.png)
 
 See details [here](/Google%20Line%20Chart%20Demo/README.md) 👈
