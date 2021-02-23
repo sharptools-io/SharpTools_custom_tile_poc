@@ -1,0 +1,75 @@
+<script src="https://cdn.sharptools.io/js/custom-tiles.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<style>
+body {margin:unset;}
+</style>
+
+<div id="chart" align="center"></div>
+<script>
+let chart, chartData; 
+  let url = "https://corona.lmao.ninja/v2/historical/usacounties"
+  let state, county;
+  let chartOptions = {
+    chart:{
+      title: 'COVID-19 Cases',  
+      legend: "bottom",  
+    },
+    width: 600,
+    height: 400,
+    series:{
+      0: {axis: "Cases"},
+      1: {axis: "Deaths"}
+    },
+    axes:{
+      y:{
+        Cases: {label: "Cases"},
+        Deaths: {label: "Deaths"},
+      },
+    },    
+  };
+  //Load Google Chart script
+  google.charts.load('current', {'packages':['line']});
+  google.charts.setOnLoadCallback(initChart);
+   
+  stio.ready(function(data){
+    state = data.settings.state;
+    county = data.settings.county;
+    valuePollingScheduler();
+  });
+  
+  function initChart() {
+    chart = new google.charts.Line(document.getElementById('chart'));  
+    chartData = new google.visualization.DataTable();
+    chartData.addColumn("string", "Date");
+    chartData.addColumn("number", "Cases");
+    chartData.addColumn("number", "Deaths");
+  }
+  
+  function getCovidData(){
+    console.log("Quering the covid data");
+    axios.get(`${url}/${state}?lastdays=30`,{
+     }).then((res)=>{
+       let timelineData= res.data.find(d=>d.county === county).timeline;
+       if(chart && chartData){         
+         let rowData = [];
+         for (let item in timelineData.cases){
+           if(timelineData.cases.hasOwnProperty(item)){
+             rowData.push([item, timelineData.cases[item], timelineData.deaths[item]]);
+           }
+         }      
+         //Clear the chart's existing rows
+         chartData.removeRows(0, chartData.fg.length);
+         //Add new data rows
+         chartData.addRows(rowData);     
+         chart.draw(chartData, google.charts.Line.convertOptions(chartOptions));
+       }       
+     });
+  }
+  
+  function valuePollingScheduler(){
+    getCovidData();
+    console.log("polling value in 24 hours");
+    setTimeout(valuePollingScheduler, 86400000); 
+  }
+</script>
