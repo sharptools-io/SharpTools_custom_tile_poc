@@ -1,0 +1,81 @@
+<script src="https://cdn.sharptools.io/js/custom-tiles.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<style> 
+body {margin:unset;}
+#map {height:100vh;}
+</style>
+<div id="map"></div>
+<script>
+let map, imgUrl, marker;
+let heAPIUrl = "https://cloud.hubitat.com/api/eae18ffb-86d0-4dca-bfc9-468b0f8f2a53/apps";
+let heToken, googleApiKey;
+
+stio.ready(function(data){
+  heToken = data.settings.heToken;
+  imgUrl = data.settings.avatarUrl;
+  googleApiKey = data.settings.googleApiKey;
+  let script = document.createElement('script');
+  script.onload = function () {
+    console.log(`Google map script is loaded`);
+    initMap();
+    valuePollingScheduler();
+  };
+  //Dynamically load Google Map js and attach the API key
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&callback=initMap&libraries=&v=weekly`;  
+  document.head.appendChild(script);
+});
+
+function initMap() {
+  console.log(`Initialize Google map element`);
+  map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 15,
+    disableDefaultUI: true  //To have cleaner map view
+  });   
+}
+function clearMarker(){
+  //Remove the existing marker from the map
+  if(marker) marker.setMap(null);  
+}
+
+function setMarker(map, pos) {
+  clearMarker();
+  //Add marker with image to the map
+  //https://developers.google.com/maps/documentation/javascript/examples/icon-complex
+  let makerImage = {
+    url:
+      imgUrl,
+      size: new google.maps.Size(48, 48),
+      origin: new google.maps.Point(0, 0),
+      anchor: new google.maps.Point(0, 48),
+  };  
+  marker = new google.maps.Marker({
+    position: { lat: pos.lat, lng: pos.lng},    
+    map,
+    icon: makerImage,
+  }); 
+  map.setCenter(pos);
+}
+
+function getCurrentPos(){
+  //Get the device value (geolocation) using Hubitat Maker API
+  axios.get(`${heAPIUrl}/1089/devices/1122?access_token=${heToken}`,{
+    }).then((res)=>{
+      let latAttr = res.data.attributes.find(a => a.name === "latitude");
+      let lngAttr = res.data.attributes.find(a => a.name === "longitude");
+      if(latAttr && lngAttr){
+        console.log(`Received geolocation value. Lat: ${latAttr.currentValue}, Lng: ${lngAttr.currentValue}`);
+        let pos ={
+          lat: latAttr.currentValue,
+          lng: lngAttr.currentValue,
+        }
+        //Update the marker in the map
+        setMarker(map, pos);
+      }
+    });
+}
+function valuePollingScheduler(){
+  getCurrentPos();
+  console.log("polling value in 5 minutes");
+  setTimeout(valuePollingScheduler, 300000);
+}
+</script>
