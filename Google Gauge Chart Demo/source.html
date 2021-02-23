@@ -1,0 +1,53 @@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+<script src="https://cdn.sharptools.io/js/custom-tiles.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<div align="center">Battery</div>
+<div id="chart" align="center"></div>
+<script>
+  let token;
+  let url = "https://cloud.hubitat.com/api/eae18ffb-86d0-4dca-bfc9-468b0f8f2a53/apps";
+  let chart, chartData; 
+  let chartOptions = {
+    width: 150, height: 150,
+    redFrom: 0, redTo: 20,
+    yellowFrom:20, yellowTo: 40,
+    minorTicks: 1
+  };
+  //Load gauge script
+  google.charts.load('current', {'packages':['gauge']});  
+  google.charts.setOnLoadCallback(initChart);  
+  
+  stio.ready(function(data){
+    token = data.settings.token;
+    valuePollingScheduler();
+  });
+  
+  function initChart() {
+    console.log("Initialize Google Chart");
+    chartData = google.visualization.arrayToDataTable([
+      ['Label', 'Value'],
+      ['Battery', 0],
+    ]);    
+    chart = new google.visualization.Gauge(document.getElementById('chart'));
+  }
+  
+  function getDeviceValue(){  
+    //Getting the device's battery reading using Hubitat Maker API
+    axios.get(`${url}/1089/devices/728?access_token=${token}`,{
+      }).then((res)=>{
+        let value = res.data.attributes[0].currentValue;
+        console.log(`Received battery reading: ${value}`);
+        //Set chart value and draw chart
+        chartData.setValue(0, 1, value);
+        chart.draw(chartData, chartOptions);   
+      });
+  }
+  
+  function valuePollingScheduler(){
+    getDeviceValue();
+    console.log("polling value in 5 minutes");
+    setTimeout(valuePollingScheduler, 300000);
+  }
+</script>
