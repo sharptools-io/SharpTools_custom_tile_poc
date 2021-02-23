@@ -6,11 +6,11 @@ This demo uses Hubitat Maker API to retrieve the device's geolocation (latitude 
 
 ![Quick View](/Google%20Map%20Demo/assets/location_tracker_tile.png)
 
-* Please note that this is using a Hubitat community developed smartapp and device driver to access Life360 geolocation info. For SmartThings user, the new SmartThings REST API doesn't allow custom device driver, so you may have to access Life360 API directly to get the latitude and longitude info. See below for the detailed information and these implementation are not the "official" connection on either platform.
+Please note that this is using a Hubitat community developed smartapp and device driver to access Life360 geolocation info. For SmartThings user, the new SmartThings REST API doesn't allow custom device driver, so you may have to access Life360 API directly to get the latitude and longitude info. See below for the detailed information and these implementation are not the "official" connection on either platform.
 
-* [Hubitat Community Developed Life360 Smartapp & Device Driver - by bptworld] (https://github.com/bptworld/Hubitat/tree/master/Ported)
+* [Hubitat Community Developed Life360 Smartapp & Device Driver - by bptworld](https://github.com/bptworld/Hubitat/tree/master/Ported)
 
-* [SmartThings Community Developed Life360 Smartapp - by tmleafs] (https://github.com/tmleafs/life360-smartthings-refresh/tree/master/smartapps/tmleafs/life360-connect.src). (This may be a quick reference if you want to reverse engineer and access Life360 API directly.)
+* [SmartThings Community Developed Life360 Smartapp - by tmleafs](https://github.com/tmleafs/life360-smartthings-refresh/tree/master/smartapps/tmleafs/life360-connect.src). (This may be a quick reference if you want to reverse engineer and access Life360 API directly.)
 
 
 ## Getting Started
@@ -23,10 +23,10 @@ Google allows $200 recurring monthly credit. 😀
 
 #### Enable Hubitat Maker API 
 Follow the steps below to enable Maker API in Hubitat admin page.
-[Maker API]https://docs.hubitat.com/index.php?title=Maker_API
+[Maker API](https://docs.hubitat.com/index.php?title=Maker_API)
 * Select the devices that can be controled using this Maker API
 * Enable "Allow Access via Remote/Cloud"
-* Add "https://api.sharptools.io" in the *Allowed Hosts (for CORS) field (to be updated)
+* Add "https://api.sharptools.io" in the **Allowed Hosts (for CORS)** field (to be updated)
 * Scroll down and copy the Access Token generated
 
 #### Create Custom Tile
