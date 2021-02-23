@@ -40,8 +40,10 @@
         let value = res.data.attributes[0].currentValue;
         console.log(`Received battery reading: ${value}`);
         //Set chart value and draw chart
-        chartData.setValue(0, 1, value);
-        chart.draw(chartData, chartOptions);   
+        if(chart && chartData){
+          chartData.setValue(0, 1, value);
+          chart.draw(chartData, chartOptions);   
+        }
       });
   }
   
