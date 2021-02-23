@@ -27,7 +27,7 @@
 
 This is a proof of concept of using SharpTools Custom Tile feature to create a dashboard tile interacting with Spotify using Spotify individual developer's app and its access token. 
 
-![Quick View](/Spotify Demo/assets/quick_view.png)
+![Quick View](/Spotify%20Demo/assets/quick_view.png)
 
 [Demo Video](https://youtu.be/088h3uIvKkY)
 
