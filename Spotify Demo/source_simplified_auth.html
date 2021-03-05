@@ -158,11 +158,11 @@ function getNewToken(){
   return new Promise(function(resolve, reject){
     axios.post(`https://spotify-demo-auth.glitch.me/token`,  
       {refreshToken: userSettings.refreshToken}, {}      
-      }).then(function(res){
+      ).then(function(res){
         console.log(res);
-        if(res && res.data && res.data.access_token){
+        if(res && res.data && res.data.accessToken){
           console.log("Received new token");
-          userSettings.token = res.data.access_token;
+          userSettings.token = res.data.accessToken;
           resolve(res.data.access_token);
         }      
       }).catch(function(err){
@@ -276,7 +276,7 @@ function getCurrPlayback(){
           ctrlPause.style.display = "block";
           //Schedule the polling task
           if(spotifyRefreshTimer == null) 
-            spotifyRefreshTimer = schedulePlaybackRefresh();
+            schedulePlaybackRefresh();
         }
         else{
           spotifyData.status = "pause";          
