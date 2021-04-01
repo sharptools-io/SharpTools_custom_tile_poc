@@ -3,11 +3,17 @@
 {
   "schema": "0.1.0",
   "settings": [
-    {"name": "accessToken", "type": "STRING", "label": "Access Token"},
-    {"label": "Refresh Token", "type": "STRING", "name": "refreshToken"}
+    {"name": "token", "type": "STRING", "label": "Access Token"},
+    {"type": "STRING", "label": "Refresh Token", "name": "refreshToken"},
+    {"type": "STRING", "name": "clientId", "label": "Spotify App Client Id"},
+    {
+      "name": "clientSecret",
+      "label": "Spotify App Client Secret",
+      "type": "STRING"
+    }
   ],
-  "name": "Spotify quick demo (use James Spotify app to auth)",
-  "dimensions": {"height": 3, "width": 3}
+  "name": "Spotify Demo",
+  "dimensions": {"height": 2, "width": 2}
 }
 </script>
 <!-- Do not edit above -->
