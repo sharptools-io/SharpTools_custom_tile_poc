@@ -1,37 +1,107 @@
 <!-- Do not edit below -->
 <script type="application/json" id="tile-settings">
-{
-  "schema": "0.1.0",
-  "settings": [{"label": "API Token", "type": "STRING", "name": "token"}],
-  "name": "Gauge chart Demo"
-}
+  {
+    "schema": "0.1.0",
+    "settings": [
+      {"name": "apiSample", "label": "Sample Maker API URL", "type": "STRING"},
+      {"name": "deviceId", "label": "Device ID", "type": "STRING"},
+      {"name": "gaugeLabel", "label": "Label (optional)", "type": "STRING"}
+    ]
+  }
 </script>
 <!-- Do not edit above -->
+<style>
+  html, body { height: 100% };
+  #chart { height: 100%; width: 100%;}
+</style>
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
 <script src="https://cdn.sharptools.io/js/custom-tiles.js"></script>
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<div align="center">Battery</div>
 <div id="chart" align="center"></div>
 <script>
-  let token;
-  let url = "https://cloud.hubitat.com/api/eae18ffb-86d0-4dca-bfc9-468b0f8f2a53/apps";
-  let chart, chartData; 
-  let chartOptions = {
-    width: 150, height: 150,
+  //stub a variable to hold the settings at a higher scope
+  var tileSettings = { 
+    // apiSample: "https://cloud.hubitat.com/api/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX/apps/999/devices?access_token=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX", 
+    // deviceId: "67",
+    // attribute: "visualWithText"
+  }
+  var apiSettings = {};
+  
+  //setup the chart variables
+  var chart, chartData; 
+  var chartOptions = {
     redFrom: 0, redTo: 20,
     yellowFrom:20, yellowTo: 40,
     minorTicks: 1
   };
+  
   //Load gauge script
   google.charts.load('current', {'packages':['gauge']});  
   google.charts.setOnLoadCallback(initChart);  
   
   stio.ready(function(data){
-    token = data.settings.token;
-    valuePollingScheduler();
+    //get the settings from the callback
+    tileSettings = data.settings; //apiSample, deviceId, gaugeLabel
+    
+    //and initialize the tile
+    init();
   });
+
+  function init(){
+    //parse the relevant settings out of the apiSample
+    parseApiSample();
+
+    if(tileSettings.deviceId == null || tileSettings.deviceId == ""){
+      return showError("Device ID is not set");
+    } 
+
+    
+    //make a call to the Hubitat API to get some data
+    valuePollingScheduler();
+  }
+
+  //helper method for logging an error to console, showing a toast, and updating the tile to display 'Error'
+  function showError(message){
+    console.error(message);
+    stio.showToast(message, "red");
+    document.getElementById("chart").innerHTML = "Error";
+  }
+
+  //parse out the various components from a provided Maker API URL
+  function parseApiSample(sampleUrl){
+    //if we weren't passed in an explicit URL to parse
+    if(sampleUrl == null){
+      //then try to use the sample API URL from the tile settings
+      sampleUrl = tileSettings.apiSample;
+    }
+    //if no URL was provided, let the user know
+    if(sampleUrl == null || sampleUrl === "") showError("No API URL was provided. Please configure the tile.");
+    //if the api isn't the cloud API, let the user know
+    if(sampleUrl.indexOf("cloud.hubitat.com") < 0) showError("Please use the Hubitat Maker API CLOUD URI.")
+
+    //try to parse out the various parts of the URL we need with a regular expression
+    var re = /https:\/\/cloud\.hubitat\.com\/api\/([^\/]+)\/apps\/([\d]+)\/[^\?]+\?access_token\=([^\&]+)/;
+    var match = sampleUrl.match(re); //array of the various regex matches (0: full string, 1: hub id, 2: app id, 3: token)
+
+    //pass the parsed settings back into the top-level variable
+    apiSettings = { 
+      "hubId": match[1], 
+      "appId": match[2], 
+      "token": match[3]
+    };
+  }
+
+  //helper function to format the parsed data back into a base URI
+  function getBaseUrl(){
+    return `https://cloud.hubitat.com/api/${apiSettings.hubId}/apps/${apiSettings.appId}`
+  }
+  //helper function to format the token into an axios 'data' object to attach the token as a parameter
+  function getAxiosConfig(){
+    return {params: {access_token: apiSettings.token}};
+  }
   
   function initChart() {
     console.log("Initialize Google Chart");
@@ -43,16 +113,23 @@
   }
   
   function getDeviceValue(){  
+    var url = getBaseUrl() + `/devices/${tileSettings.deviceId}`
+    var config = getAxiosConfig();
     //Getting the device's battery reading using Hubitat Maker API
-    axios.get(`${url}/1089/devices/728?access_token=${token}`,{
-      }).then((res)=>{
-        let value = res.data.attributes[0].currentValue;
+    axios.get(url, config).then(function(res){
+        var value = res.data.attributes[0].currentValue;
         console.log(`Received battery reading: ${value}`);
         //Set chart value and draw chart
         if(chart && chartData){
           chartData.setValue(0, 1, value);
+          //if the user provided a label, use it
+          if(tileSettings.gaugeLabel != null && tileSettings.gaugeLabel != ""){
+            chartData.setValue(0, 0, tileSettings.gaugeLabel);
+          }
           chart.draw(chartData, chartOptions);   
         }
+      }).catch(function(error){
+          showError("Error communicating with Maker API")
       });
   }
   
@@ -62,3 +139,4 @@
     setTimeout(valuePollingScheduler, 300000);
   }
 </script>
+  
