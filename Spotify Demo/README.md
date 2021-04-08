@@ -7,7 +7,10 @@
       <a href="#overview">Overview</a>
     </li>
     <li>
-      <a href="#getting-started">Getting Started</a>
+      <a href="#quick-version">Quick Version (easy)
+    </li>
+    <li>
+      <a href="#full-developer-version">Developer Version (advanced)</a>
       <ul>
         <li><a href="#prerequisites">Prerequisites</a>
             <ul>
@@ -25,18 +28,33 @@
 
 ## Overview
 
-This is a proof of concept of using SharpTools Custom Tile feature to create a dashboard tile interacting with Spotify using Spotify individual developer's app and its access token. 
+This is a proof of concept of using SharpTools Custom Tile feature to create a dashboard tile interacting with Spotify by means of a bespoke Spotify developer app and associated access token. 
 
 ![Quick View](/Spotify%20Demo/assets/quick_view.png)
 
 [Demo Video](https://youtu.be/088h3uIvKkY)
 
-*Please note that this is NOT an official integration between SharpTools and Spotify, but just a demo of Custom Tile feature. 
+*Please note that this is NOT an official integration between SharpTools and Spotify --  just a demo of Custom Tile feature. 
 
-## Getting Started
+## Quick Version
+The quick version of this integration uses a Spotify App that I've hosted on Glitch in order to make the initial setup much simpler. All you have to do is start the authentication process and then copy over your Refresh Token.
+
+1. Navigate to [https://spotify-demo-auth.glitch.me/](https://spotify-demo-auth.glitch.me/)
+   * Follow the instructions to authorize the demo app to have access to your Spotify account and make note of the 'Refresh Token'
+2. Create a Custom Tile in the SharpTools Developer Tools
+   1. Select the **HTML** type
+   2. Create a setting named `refreshToken`
+   3. Set the **Default Dimension** to `3x3`
+   4. Copy and paste the custom tile code from `source_simplified_auth.html`
+   5. Hit preview and copy the 'refreshToken' from earlier
+3. Save your custom tile (and add it to your dashboard)
+
+> If you want full control over the end-to-end process, check out the <a href="#full-developer-version">Full Developer Version</a> instead.
+
+## Full Developer Version
 ### Prerequisites
 #### Create Spotify Developer App
-The first step is to create a Spotify app that is to be used to integrate with your Sptofy account using Spotify Web API
+The first step is to create a Spotify app that is to be used to integrate with your Spotify account using the Spotify Web API
 * Navigate to https://developer.spotify.com/dashboard/login and login with your Spotify credential
 * Click "CREATE AN APP" at top-right to create your app
 * Fill-in the App Name and Description, and check the agreements. Hit "Create"
