@@ -26,7 +26,7 @@ Follow the steps below to enable Maker API in Hubitat admin page.
 [Maker API](https://docs.hubitat.com/index.php?title=Maker_API)
 * Select the devices that can be controled using this Maker API
 * Enable "Allow Access via Remote/Cloud"
-* Add "https://api.sharptools.io" in the **Allowed Hosts (for CORS)** field (to be updated)
+* Add "https://run.sharptools.app" in the **Allowed Hosts (for CORS)** field
 * Scroll down and copy the Access Token generated
 
 ### Create Custom Tile
@@ -35,7 +35,7 @@ Follow the steps below to enable Maker API in Hubitat admin page.
     * Select "HTML" as Type
     * Add three "Settings" with "string" type
         * avatarUrl (the map maker image to be displaed in the map)
-        * heToken (Hubitat Maker API token created in the previous step)
+        * heToken (The Access Token in any of the Maker API example urls created in the previous step)
         * googleApiKey (Google Map API created in the first step)
     ![settings](/Google%20Map%20Demo/assets/tile_settings.png)
     * Set default dimensons to 2x2

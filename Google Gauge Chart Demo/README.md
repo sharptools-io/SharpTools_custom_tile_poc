@@ -27,7 +27,10 @@ Follow the steps below to enable Maker API in Hubitat admin page.
 * Go to the desired dashboard, Edit, and Add Item. Tap "Custom Tile" in the Other section and add this custom tile.
 
 * Edit the tile and fill-in the settings:
-  * Hubitat Maker API example - use one of the Hubitat Maker API Cloud endpoints
+  * Sample Maker API Url - use one of the Hubitat Maker API Cloud endpoints
+  
+  ![Sample Cloud endpoint url](/Google%20Gauge%20Chart%20Demo/assets/sample_cloud_url.png) 
+
   * Device ID -  enter the ID of a device with a battery attribute
 
   ![Edit custom tile](/Google%20Gauge%20Chart%20Demo/assets/tile_editor.png)
