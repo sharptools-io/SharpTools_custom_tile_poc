@@ -5,8 +5,8 @@
     "settings": [
       {"name": "apiSample", "label": "Sample Maker API URL", "type": "STRING"},
       {"name": "deviceId", "label": "Device ID", "type": "STRING"},
-      {"name": "gaugeLabel", "label": "Label (optional)", "type": "STRING"}
-    ]
+    ],
+    "label": { "display": false }
   }
 </script>
 <!-- Do not edit above -->
@@ -44,7 +44,7 @@
   
   stio.ready(function(data){
     //get the settings from the callback
-    tileSettings = data.settings; //apiSample, deviceId, gaugeLabel
+    tileSettings = data.settings; //apiSample, deviceId, label
     
     //and initialize the tile
     init();
@@ -123,8 +123,8 @@
         if(chart && chartData){
           chartData.setValue(0, 1, value);
           //if the user provided a label, use it
-          if(tileSettings.gaugeLabel != null && tileSettings.gaugeLabel != ""){
-            chartData.setValue(0, 0, tileSettings.gaugeLabel);
+          if(tileSettings.label != null && tileSettings.label != ""){
+            chartData.setValue(0, 0, tileSettings.label);
           }
           chart.draw(chartData, chartOptions);   
         }
