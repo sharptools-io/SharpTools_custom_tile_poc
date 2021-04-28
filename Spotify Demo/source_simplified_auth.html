@@ -58,8 +58,8 @@ html{background-color:#212529;}
     -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5); 
 }
 </style>
-<div id="spotify-main" class="text-light bg-dark">  
-  <div id="playback" class="row g-0">
+<div id="spotify-main" class="text-light bg-dark" align="center">  
+  <div id="playback" class="row g-0" align="left">
     <div class="col-4 g-0">
       <svg id="temp-album-art" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-music-note-beamed" viewBox="0 0 16 16">
         <path d="M6 13c0 1.105-1.12 2-2.5 2S1 14.105 1 13c0-1.104 1.12-2 2.5-2s2.5.896 2.5 2zm9-2c0 1.105-1.12 2-2.5 2s-2.5-.895-2.5-2 1.12-2 2.5-2 2.5.895 2.5 2z"/>
@@ -117,7 +117,7 @@ html{background-color:#212529;}
       </div>
     </div>  
   </div>
-  <div id="content" class="overflow-auto">
+  <div id="content" class="overflow-auto" align="left">
     <ul id="lists" class="list-group">
     </ul>    
   </div>  
@@ -218,7 +218,10 @@ function getPlaylists(){
             item.classList.add('list-group-item');
             item.classList.add('bg-dark');
             item.setAttribute("id", playlist.uri);
-            item.onclick = function(){controlPlayer("play",{contextUri: playlist.uri})};
+            item.onclick = function(){
+              var uri = this.id;
+              controlPlayer("play",{contextUri: uri})
+            };
             item.appendChild(document.createTextNode(playlist.name));
             ulLists.appendChild(item);
           }          
@@ -259,7 +262,10 @@ function getDevices(showDeviceList=false){
             var device = spotifyData.devices[i];
             item.classList.add('list-group-item');
             item.classList.add('bg-dark');            
-            item.onclick = function(){setActiveDevice(device.id, false, "playlists")};
+            item.onclick = function(){
+              var deviceId = this.id;     
+              setActiveDevice(deviceId, false, "playlists")
+            };
             item.appendChild(document.createTextNode(device.name));
             ulLists.appendChild(item);
           }     
