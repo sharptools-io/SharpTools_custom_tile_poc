@@ -119,11 +119,13 @@
     axios.get(url, config).then(function(res){      
         var desiredAttr;
         var attrName = "battery"; //Default to find the battery attribute
-        for (var index = 0; index < res.data.attributes.length; index++){
-          if (tileSettings.attribute != null)
+        if (tileSettings.attribute != null && tileSettings.attribute != "")
             attrName = tileSettings.attribute;
-          if (res.data.attributes[index].name === attrName)
+        for (var index = 0; index < res.data.attributes.length; index++){          
+          if (res.data.attributes[index].name === attrName){
             desiredAttr = res.data.attributes[index];
+            break;
+          }
         }        
         var value = desiredAttr.currentValue;
         console.log(`Received value reading: ${value}`);
