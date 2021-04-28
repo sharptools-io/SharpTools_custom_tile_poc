@@ -3,13 +3,13 @@
 {
   "schema": "0.1.0",
   "settings": [
-    {"name": "token", "type": "STRING", "label": "Access Token"},
-    {"type": "STRING", "label": "Refresh Token", "name": "refreshToken"},
+    {"type": "STRING", "name": "token",  "label": "Access Token"},
+    {"type": "STRING", "name": "refreshToken", "label": "Refresh Token"},
     {"type": "STRING", "name": "clientId", "label": "Spotify App Client Id"},
     {
+      "type": "STRING",
       "name": "clientSecret",
-      "label": "Spotify App Client Secret",
-      "type": "STRING"
+      "label": "Spotify App Client Secret"     
     }
   ],
   "name": "Spotify Demo",
@@ -125,45 +125,66 @@ html{background-color:#212529;}
   </div>  
 </div>
 <script>
-let apiUrl = "https://api.spotify.com/v1";
-let authUrl = "https://accounts.spotify.com/authorize";
-let token;
-let refreshToken
-let btnSignin = document.getElementById("btn-signin");
-let divPlaybackInfo = document.getElementById("playback-info");
-let ulLists = document.getElementById("lists");
-let divTitle = document.getElementById("title");
-let divArtist = document.getElementById("artist");
-let divContent = document.getElementById("content");
-let tempAlbumArt = document.getElementById("temp-album-art"); 
-let imgAlbumArt = document.getElementById("album-art");
-let ctrlPlay = document.getElementById("ctrl-play");
-let ctrlPause = document.getElementById("ctrl-pause");
-let ctrlShuffle = document.getElementById("ctrl-shuffle");
+var apiUrl = "https://api.spotify.com/v1";
+var authUrl = "https://accounts.spotify.com/authorize";
+var token;
+var refreshToken
+var btnSignin = document.getElementById("btn-signin");
+var divPlaybackInfo = document.getElementById("playback-info");
+var ulLists = document.getElementById("lists");
+var divTitle = document.getElementById("title");
+var divArtist = document.getElementById("artist");
+var divContent = document.getElementById("content");
+var tempAlbumArt = document.getElementById("temp-album-art"); 
+var imgAlbumArt = document.getElementById("album-art");
+var ctrlPlay = document.getElementById("ctrl-play");
+var ctrlPause = document.getElementById("ctrl-pause");
+var ctrlShuffle = document.getElementById("ctrl-shuffle");
 
-let spotifyRefreshTimer;
-let spotifyData = {};
-let userSettings;
-let activeDeviceId;
-let tileSize = {
+var spotifyRefreshTimer;
+var spotifyData = {};
+var userSettings;
+var activeDeviceId;
+var tileSize = {
   height: window.innerHeight,
   width: window.innerWidth
 };
-let contentHeight = tileSize.height - divPlaybackInfo.clientHeight;
+var contentHeight = tileSize.height - divPlaybackInfo.clientHeight;
 divContent.style.height = `${contentHeight}px`;
 
-stio.ready(function(data){
+//helper method for logging an error to console, showing a toast, and updating the tile to display 'Error'
+function showError(message){
+  console.error(message);
+  stio.showToast(message, "red");
+  document.getElementById("spotify-main").innerHTML = "Error";
+}
+
+stio.ready().then(function(data){
   console.log("stio is ready");
   userSettings= data && data.settings;
-  //Token expires every hour so it's likely is is expired when loaded.
-  getNewToken().then(function(){
-    //Get the playlists first before asking for the current playback
-    return getPlaylists();
-  }).then(function(){
-    return getCurrPlayback();
-  }).then(function(){
-    getDevices(); 
-  });  
+  if(userSettings.token == null || userSettings.token == ""){
+    showError("Spotify Access Token is not set");
+  }
+  else if(userSettings.refreshToken == null || userSettings.refreshToken == ""){
+    showError("Spotify Refresh Token is not set");
+  }
+  else if(userSettings.clientId == null || userSettings.clientId == ""){
+    showError("Spotify App's Client ID is not set");
+  }
+  else if(userSettings.clientSecret == null || userSettings.clientSecret == ""){
+    showError("Spotify App's Client Secret is not set");
+  }
+  else{
+    //Token expires every hour so it's likely is is expired when loaded.
+    getNewToken().then(function(){
+      //Get the playlists first before asking for the current playback
+      return getPlaylists();
+    }).then(function(){
+      return getCurrPlayback();
+    }).then(function(){
+      getDevices(); 
+    });  
+  }
 });
 
 function getNewToken(){
@@ -206,9 +227,9 @@ function getPlaylists(){
         if(res.data && res.data.items){
           spotifyData.playlists = res.data.items;      
           removeAllChildNodes(ulLists);
-          for(let i=0; i < res.data.items.length; i++){
-            let playlist = res.data.items[i];
-            let item = document.createElement("li");
+          for(var i=0; i < res.data.items.length; i++){
+            var playlist = res.data.items[i];
+            var item = document.createElement("li");
             item.classList.add('list-group-item');
             item.classList.add('bg-dark');
             item.setAttribute("id", playlist.uri);
@@ -248,9 +269,9 @@ function getDevices(showDeviceList=false){
         spotifyData.devices = res.data.devices;
         if(showDeviceList){
           removeAllChildNodes(ulLists);
-          for(let i=0; i < spotifyData.devices.length; i++){
-            let item = document.createElement("li");
-            let device = spotifyData.devices[i];
+          for(var i=0; i < spotifyData.devices.length; i++){
+            var item = document.createElement("li");
+            var device = spotifyData.devices[i];
             item.classList.add('list-group-item');
             item.classList.add('bg-dark');            
             item.onclick = function(){setActiveDevice(device.id, false, "playlists")};
@@ -319,9 +340,9 @@ function getCurrPlayback(){
           divTitle.innerHTML= "";
         
         //Update the playback artist
-        let artistsText = "";
+        var artistsText = "";
         if (res.data.item && res.data.item.artists){
-          for (let i=0; i < res.data.item.artists.length; i++){
+          for (var i=0; i < res.data.item.artists.length; i++){
             if (!artistsText) artistsText = res.data.item.artists[i].name;
             else artistsText += `, ${res.data.item.artists[i].name}`;
           }       
@@ -331,12 +352,12 @@ function getCurrPlayback(){
         //Update the current selected playlist
         if(spotifyData.currPlayback && spotifyData.currPlayback.context && spotifyData.currPlayback.context.uri){
           //Remove the current active class
-          for (let i=0; i < ulLists.childNodes.length; i++){
-            let item = ulLists.childNodes[i];
+          for (var i=0; i < ulLists.childNodes.length; i++){
+            var item = ulLists.childNodes[i];
             item.classList.remove("active");            
           }
           //Add active class to the currently played playlist
-          let activeList = document.getElementById(spotifyData.currPlayback.context.uri);
+          var activeList = document.getElementById(spotifyData.currPlayback.context.uri);
           if(activeList) activeList.classList.add("active");
         }
       }
@@ -351,9 +372,9 @@ function getCurrPlayback(){
 }
 
 function controlPlayer(action, params = {}){
-  let url = `${apiUrl}/me/player/${action}`;
-  let data = {};
-  let method = "put";
+  var url = `${apiUrl}/me/player/${action}`;
+  var data = {};
+  var method = "put";
   if(action === "next" || action === "previous")
     method = "post";    
   //Specify which device to send the play command  
@@ -383,7 +404,7 @@ function controlPlayer(action, params = {}){
 }
 
 function shuffle(){
-  let isShuffle = spotifyData && spotifyData.currPlayback && spotifyData.currPlayback.shuffle_state;
+  var isShuffle = spotifyData && spotifyData.currPlayback && spotifyData.currPlayback.shuffle_state;
   isShuffle = !isShuffle ? true : false; //toggle shuffle state
   return axios.put(`${apiUrl}/me/player/shuffle?state=${isShuffle}`, {}, {
     headers: {"Authorization": "Bearer " + userSettings.token}

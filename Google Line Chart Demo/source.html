@@ -47,16 +47,23 @@
   google.charts.load('current', {'packages':['line']});
   google.charts.setOnLoadCallback(initChart);
 
+  //helper method for logging an error to console, showing a toast, and updating the tile to display 'Error'
+  function showError(message){
+    console.error(message);
+    stio.showToast(message, "red");
+    document.getElementById("chart").innerHTML = "Error";
+  }
+
   //when the stio library is ready
-  stio.ready(function(data){
+  stio.ready().then(function(data){
     //get the user defined settings and pass them up to a higher scope
     state = data.settings.state;
     county = data.settings.county;
 
     //if the user didn't configure a state, show them some sample data
     if(state == null || state == ""){
-      stio.showToast("No state configured. Using 'texas' as default.", "red");
-      state = 'texas'
+      showError("No state configured. Using 'texas' as default.");      
+      state = 'texas';
     }
     valuePollingScheduler();
   });
@@ -76,7 +83,12 @@
 
       //if a county is set, get the data for that county
       if(county != null && county != ""){
-        timelineData = res.data.find(function(d){ return d.county === county}).timeline;
+        for (var index = 0; index < res.data.length; index ++){
+          if(res.data[index].county === county){
+            timelineData = res.data[index].timeline;
+            break;
+          }
+        }        
       } 
 
       //if we still don't have timeline data (no county match)
@@ -84,7 +96,7 @@
         var firstItem = res.data[0]
         var countyName = firstItem.county;
         var stateName = firstItem.province;
-        stio.showToast(`No county matched. Using ${countyName}, ${stateName}`, 'red')
+        showError(`No county matched. Using ${countyName}, ${stateName}`);        
         timelineData = res.data[0].timeline; //otherwise just grab the first one for demo purposes
       }
     

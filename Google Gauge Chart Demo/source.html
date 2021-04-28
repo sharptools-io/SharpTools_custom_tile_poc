@@ -5,6 +5,7 @@
     "settings": [
       {"name": "apiSample", "label": "Sample Maker API URL", "type": "STRING"},
       {"name": "deviceId", "label": "Device ID", "type": "STRING"},
+      {"name": "attribute", "label": "Attribute (default: battery)", "type": "STRING"},
       {"name": "gaugeLabel", "label": "Label (optional)", "type": "STRING"}
     ]
   }
@@ -26,7 +27,7 @@
   var tileSettings = { 
     // apiSample: "https://cloud.hubitat.com/api/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX/apps/999/devices?access_token=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX", 
     // deviceId: "67",
-    // attribute: "visualWithText"
+    // attribute: "battery"
   }
   var apiSettings = {};
   
@@ -42,9 +43,9 @@
   google.charts.load('current', {'packages':['gauge']});  
   google.charts.setOnLoadCallback(initChart);  
   
-  stio.ready(function(data){
+  stio.ready().then(function(data){
     //get the settings from the callback
-    tileSettings = data.settings; //apiSample, deviceId, gaugeLabel
+    tileSettings = data.settings; //apiSample, deviceId, gaugeLabel, attribute
     
     //and initialize the tile
     init();
@@ -57,7 +58,6 @@
     if(tileSettings.deviceId == null || tileSettings.deviceId == ""){
       return showError("Device ID is not set");
     } 
-
     
     //make a call to the Hubitat API to get some data
     valuePollingScheduler();
@@ -116,18 +116,31 @@
     var url = getBaseUrl() + `/devices/${tileSettings.deviceId}`
     var config = getAxiosConfig();
     //Getting the device's battery reading using Hubitat Maker API
-    axios.get(url, config).then(function(res){
-        var value = res.data.attributes[0].currentValue;
-        console.log(`Received battery reading: ${value}`);
-        //Set chart value and draw chart
-        if(chart && chartData){
-          chartData.setValue(0, 1, value);
-          //if the user provided a label, use it
-          if(tileSettings.gaugeLabel != null && tileSettings.gaugeLabel != ""){
-            chartData.setValue(0, 0, tileSettings.gaugeLabel);
+    axios.get(url, config).then(function(res){      
+        var desiredAttr;
+        var attrName = "battery"; //Default to find the battery attribute
+        for (var index = 0; index < res.data.attributes.length; index++){
+          if (tileSettings.attribute != null)
+            attrName = tileSettings.attribute;
+          if (res.data.attributes[index].name === attrName)
+            desiredAttr = res.data.attributes[index];
+        }        
+        var value = desiredAttr.currentValue;
+        console.log(`Received value reading: ${value}`);
+        try{
+          //Set chart value and draw chart
+          if(chart && chartData){
+            chartData.setValue(0, 1, value);
+            //if the user provided a label, use it
+            if(tileSettings.gaugeLabel != null && tileSettings.gaugeLabel != ""){
+              chartData.setValue(0, 0, tileSettings.gaugeLabel);
+            }
+            chart.draw(chartData, chartOptions);   
           }
-          chart.draw(chartData, chartOptions);   
         }
+        catch(error){
+          showError("Error plotting value to the gauge")
+        }        
       }).catch(function(error){
           showError("Error communicating with Maker API")
       });

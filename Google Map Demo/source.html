@@ -4,7 +4,8 @@
   "schema": "0.1.0",
   "settings": [
     {"name": "avatarUrl", "label": "Avatar Image Url", "type": "STRING"},
-    {"type": "STRING", "label": "Hubitat API Token", "name": "heToken"},
+    {"name": "apiSample", "label": "Sample Maker API URL", "type": "STRING"},
+    {"name": "deviceId", "label": "Life360 Device ID", "type": "STRING"},
     {"name": "googleApiKey", "type": "STRING", "label": "Google Map API Key"}
   ],
   "name": "Google Map Demo",
@@ -20,26 +21,79 @@ body {margin:unset;}
 </style>
 <div id="map"></div>
 <script>
-let map, imgUrl, marker;
-let heAPIUrl = "https://cloud.hubitat.com/api/eae18ffb-86d0-4dca-bfc9-468b0f8f2a53/apps";
-let heToken, googleApiKey;
+var map, marker;
+var tileSettings = {};
+var apiSettings = {};
 
-stio.ready(function(data){
-  heToken = data.settings.heToken;
-  imgUrl = data.settings.avatarUrl;
-  googleApiKey = data.settings.googleApiKey;
-  let script = document.createElement('script');
-  script.onload = function () {
-    console.log(`Google map script is loaded`);
-    initMap();
-    valuePollingScheduler();
+//helper method for logging an error to console, showing a toast, and updating the tile to display 'Error'
+function showError(message){
+  console.error(message);
+  stio.showToast(message, "red");
+  document.getElementById("map").innerHTML = "Error";
+}
+
+//parse out the various components from a provided Maker API URL
+function parseApiSample(sampleUrl){
+  //if we weren't passed in an explicit URL to parse
+  if(sampleUrl == null){
+    //then try to use the sample API URL from the tile settings
+    sampleUrl = tileSettings.apiSample;
+  }
+  //if no URL was provided, let the user know
+  if(sampleUrl == null || sampleUrl === "") showError("No API URL was provided. Please configure the tile.");
+  //if the api isn't the cloud API, let the user know
+  if(sampleUrl.indexOf("cloud.hubitat.com") < 0) showError("Please use the Hubitat Maker API CLOUD URI.")
+
+  //try to parse out the various parts of the URL we need with a regular expression
+  var re = /https:\/\/cloud\.hubitat\.com\/api\/([^\/]+)\/apps\/([\d]+)\/[^\?]+\?access_token\=([^\&]+)/;
+  var match = sampleUrl.match(re); //array of the various regex matches (0: full string, 1: hub id, 2: app id, 3: token)
+
+  //pass the parsed settings back into the top-level variable
+  apiSettings = { 
+    "hubId": match[1], 
+    "appId": match[2], 
+    "token": match[3]
   };
-  //Dynamically load Google Map js and attach the API key
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&callback=initMap&libraries=&v=weekly`;  
-  document.head.appendChild(script);
+}
+//helper function to format the parsed data back into a base URI
+function getBaseUrl(){
+  return `https://cloud.hubitat.com/api/${apiSettings.hubId}/apps/${apiSettings.appId}`
+}
+//helper function to format the token into an axios 'data' object to attach the token as a parameter
+function getAxiosConfig(){
+  return {params: {access_token: apiSettings.token}};
+}
+
+stio.ready().then(function(data){
+  //get the settings from the callback
+  tileSettings = data.settings; //avatarUrl, apiSample, googleApiKey
+
+  if(tileSettings.deviceId == null || tileSettings.deviceId == ""){
+    showError("Device ID is not set");
+  }
+  else if(tileSettings.googleApiKey == null || tileSettings.googleApiKey == ""){
+    showError("Goolge API Key is not set");
+  }
+  else if(tileSettings.avatarUrl == null || tileSettings.avatarUrl == ""){
+    showError("Avtar image URL is not set");
+  }
+  else{
+    //parse the relevant settings out of the apiSample
+    parseApiSample();  
+      
+    var script = document.createElement('script');
+    script.onload = function () {
+      console.log(`Google map script is loaded`);
+      initMap();
+      valuePollingScheduler();
+    };
+    //Dynamically load Google Map js and attach the API key
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${data.settings.googleApiKey}&callback=initMap&libraries=&v=weekly`;  
+    document.head.appendChild(script);
+  }
 });
 
-function initMap() {
+function initMap() {  
   console.log(`Initialize Google map element`);
   map = new google.maps.Map(document.getElementById("map"), {
     zoom: 15,
@@ -55,12 +109,11 @@ function setMarker(map, pos) {
   clearMarker();
   //Add marker with image to the map
   //https://developers.google.com/maps/documentation/javascript/examples/icon-complex
-  let makerImage = {
-    url:
-      imgUrl,
-      size: new google.maps.Size(48, 48),
-      origin: new google.maps.Point(0, 0),
-      anchor: new google.maps.Point(0, 48),
+  var makerImage = {
+    url: tileSettings.avatarUrl,
+    size: new google.maps.Size(48, 48),
+    origin: new google.maps.Point(0, 0),
+    anchor: new google.maps.Point(0, 48),
   };  
   marker = new google.maps.Marker({
     position: { lat: pos.lat, lng: pos.lng},    
@@ -71,21 +124,33 @@ function setMarker(map, pos) {
 }
 
 function getCurrentPos(){
+  var url = getBaseUrl() + `/devices/${tileSettings.deviceId}`
+  var config = getAxiosConfig();
   //Get the device value (geolocation) using Hubitat Maker API
-  axios.get(`${heAPIUrl}/1089/devices/1122?access_token=${heToken}`,{
-    }).then((res)=>{
-      let latAttr = res.data.attributes.find(a => a.name === "latitude");
-      let lngAttr = res.data.attributes.find(a => a.name === "longitude");
-      if(latAttr && lngAttr){
-        console.log(`Received geolocation value. Lat: ${latAttr.currentValue}, Lng: ${lngAttr.currentValue}`);
-        let pos ={
-          lat: latAttr.currentValue,
-          lng: lngAttr.currentValue,
-        }
-        //Update the marker in the map
-        setMarker(map, pos);
+  axios.get(url, config).then(function(res){ 
+    var latAttr;
+    for(var i = 0; i < res.data.attributes.length; i++){
+      if(res.data.attributes[i].name === "latitude"){
+        latAttr = res.data.attributes[i];
+        break;
+      }      
+    }     
+    var lngAttr;
+    for(var j = 0; j < res.data.attributes.length; j++){
+      if(res.data.attributes[j].name === "longitude"){
+        lngAttr = res.data.attributes[j];
       }
-    });
+    }    
+    if(latAttr && lngAttr){
+      console.log(`Received geolocation value. Lat: ${latAttr.currentValue}, Lng: ${lngAttr.currentValue}`);
+      var pos ={
+        lat: latAttr.currentValue,
+        lng: lngAttr.currentValue,
+      }
+      //Update the marker in the map
+      setMarker(map, pos);
+    }
+  });
 }
 function valuePollingScheduler(){
   getCurrentPos();
