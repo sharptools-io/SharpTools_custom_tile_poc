@@ -1,4 +1,4 @@
-# Google Maps + Hubitat Make API Demo
+# Google Map + Hubitat Make API (Life360) Demo
 
 ## Overview
 

@@ -1,4 +1,4 @@
-# POC: SharpTools Custom Tile - Spotify
+# Spotify Demo
 <!-- TABLE OF CONTENTS -->
 <details open="open">
   <summary>Table of Contents</summary>
@@ -16,7 +16,7 @@
             <ul>
                 <li><a href="#create-spotify-developer-app">Create Spotify Developer App</a></li>
                 <li><a href="#authorize">Authorize</a></li>
-                <li><a href="#get-access-token">Get Access Token</a></li>
+                <li><a href="#get-token">Get Refresh Token</a></li>
             </ul>
         </li>
         <li><a href="#create-custom-tile-in-sharptools">Create Custom Tile in SharpTools</a></li>
@@ -28,7 +28,7 @@
 
 ## Overview
 
-This is a proof of concept of using SharpTools Custom Tile feature to create a dashboard tile interacting with Spotify by means of a bespoke Spotify developer app and associated access token. 
+This is a proof of concept of using SharpTools Custom Tile feature to create a dashboard tile interacting with Spotify by means of a bespoke Spotify developer app and associated token. 
 
 ![Quick View](/Spotify%20Demo/assets/quick_view.png)
 
@@ -82,7 +82,7 @@ The first step is to create a Spotify app that is to be used to integrate with y
   
   ![Redirected Code](/Spotify%20Demo/assets/redirected_code.png)
 
-#### Get Access Token
+#### Get Token
 * Use Postman, or other preferred tool, to send a POST request to request for the access and refresh token. You will need to grab your app client_id and client_secret from earlier in the format of "client_id:client_secret", and encode it in Base64 format (https://www.base64encode.org/).
   - Method: `POST`
   - url: `https://accounts.spotify.com/api/token`
@@ -96,7 +96,7 @@ The first step is to create a Spotify app that is to be used to integrate with y
   
   ![Postman Get Token](/Spotify%20Demo/assets/post_request_for_token.png)
 
-* Take a note of the received access_token and refresh_token, as these will be needed in the custom tile settings.
+* Take a note of the received refresh_token, as these will be needed in the custom tile settings.
 
 ### Create Custom Tile in SharpTools
 * Navigate to [SharpTools User Page](https://sharptools.io/user), tap the user menu drop down and select "Developer Tools"
@@ -113,7 +113,7 @@ The first step is to create a Spotify app that is to be used to integrate with y
 
   ![Add Custom Tile](/Spotify%20Demo/assets/add_custom_tile.png)
 
-* Edit the tile and fill-in the Access Token, Refresh Token, App Client ID and Secret we got from previous steps. 
+* Edit the tile and fill-in the Refresh Token, App Client ID and Secret we got from previous steps. 
 
   ![Edit custom tile](/Spotify%20Demo/assets/edit_deployed_custom_tile_settings.png)
 

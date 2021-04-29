@@ -10,21 +10,21 @@ Integration with Spotify using Spotify Developer App and API to show the playlis
 
 See details [here](/Spotify%20Demo/README.md) 👈
 
-## Hubitat Maker API & Google Map Demo
+## Google Map & Hubitat Maker API (Life360) Demo
 Uses Hubitat Maker API to retrieve Life360 device's geolocation and display in Google Map.
 
 ![Quick View](/Google%20Map%20Demo/assets/location_tracker_tile.png)
 
 See details [here](/Google%20Map%20Demo/README.md) 👈
 
-## COVID19 & Google Line Chart Demo
+## Google Line Chart & COVID19 Status Demo
 Retrieve COVID19 data from [DISEASE.SH](https://github.com/disease-sh/api), and display the cases Google Line Chart.
 
 ![Quick View](/Google%20Line%20Chart%20Demo/assets/covid_chart_tile.png)
 
 See details [here](/Google%20Line%20Chart%20Demo/README.md) 👈
 
-## Hubitat Maker API & Google Gauge Chart Demo
+## Google Gauge Chart & Hubitat Maker API Demo
 Uses Hubitat Maker API to retrieve device's battery reading and displayed in a gauge chart.
 
 ![Quick View](/Google%20Gauge%20Chart%20Demo/assets/gauge_tile.png)
