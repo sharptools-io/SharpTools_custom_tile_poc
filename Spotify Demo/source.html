@@ -152,10 +152,11 @@ var contentHeight = tileSize.height - divPlaybackInfo.clientHeight;
 divContent.style.height = `${contentHeight}px`;
 
 //helper method for logging an error to console, showing a toast, and updating the tile to display 'Error'
-function showError(message){
+function showError(message, replaceTileContent=false){
   console.error(message);
   stio.showToast(message, "red");
-  document.getElementById("spotify-main").innerHTML = "Error";
+  if(replaceTileContent)
+    document.getElementById("spotify-main").innerHTML = "Error";
 }
 
 stio.ready().then(function(data){
@@ -245,8 +246,12 @@ function getPlaylists(){
             getPlaylists();
           }); 
         }
-        else
+        else{
+          if (err.response.status === 401){
+            showError("Unauthorized. Please review the token setting and try it agian.");
+          }
           reject(err);
+        }
       });
   });
 }
@@ -286,7 +291,10 @@ function getDevices(showDeviceList=false){
       }
     }).catch(function(err){
       console.log(err);
-      if(err.response && isTokenExpiredError(err.response)){
+      if (err.response.status === 401){
+        showError("Unauthorized. Please review the token setting and try it agian.");
+      }
+      else if(err.response && isTokenExpiredError(err.response)){
         getNewToken().then(function(){
           getDevices(showDeviceList);
         }); 
@@ -367,7 +375,10 @@ function getCurrPlayback(){
       }
     }).catch(function(err){
       console.log(err);
-      if(err.response && isTokenExpiredError(err.response)){
+      if (err.response.status === 401){
+        showError("Unauthorized. Please review the token setting and try it agian.");
+      }
+      else if(err.response && isTokenExpiredError(err.response)){
         getNewToken().then(function(){
           getCurrPlayback();
         }); 
@@ -395,8 +406,14 @@ function controlPlayer(action, params = {}){
     }).catch(function(err){
       console.log(err);
       if (err.response){
-        if(isNoActiveDeviceError(err.response)){
-          console.log("No active device. Please select a device first.");
+        if (err.response.status === 401){
+          showError("Unauthorized. Please review the token setting and try it agian.");
+        }
+        else if(isNoActiveDeviceError(err.response)){
+          showError("No active device. Please select an availabie device first.");          
+        }
+        else if(err.response.status === 403){
+          showError("Spotify premium account is required for this action.");                 
         }
         else if(isTokenExpiredError(err.response)){
           getNewToken().then(function(){
@@ -417,7 +434,16 @@ function shuffle(){
       setTimeout(getCurrPlayback, 50);
     }).catch(function(err){
       console.log(err);
-      if(err.response && isTokenExpiredError(err.response)){
+      if (err.response.status === 401){
+        showError("Unauthorized. Please review the token setting and try it agian.");
+      }
+      else if(isNoActiveDeviceError(err.response)){
+        showError("No active device. Please select an availabie device first.");          
+      }
+      else if(err.response.status === 403){
+        showError("Spotify premium account is required for this action.");
+      }
+      else if(err.response && isTokenExpiredError(err.response)){
         getNewToken().then(function(){
           shuffle();
         }); 

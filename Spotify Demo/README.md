@@ -30,6 +30,10 @@
 
 This is a proof of concept of using SharpTools Custom Tile feature to create a dashboard tile interacting with Spotify by means of a bespoke Spotify developer app and associated token. 
 
+
+> Please note that this demo code uses Spotify Web APIs, and some of them require the Spotify Premium account, such as play, pause, skip, prev, and etc. See [Spotify Web API Reference](https://developer.spotify.com/documentation/web-api/reference/#category-player) for more details. 
+
+
 ![Quick View](/Spotify%20Demo/assets/quick_view.png)
 
 [Demo Video](https://youtu.be/088h3uIvKkY)
