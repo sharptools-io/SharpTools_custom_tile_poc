@@ -246,12 +246,37 @@ function getPlaylists(){
 }
 
 function setActiveDevice(deviceId, play=false, listToShow=null){
-  console.log(`Active Device: ${deviceId}`);
-  activeDeviceId = deviceId;
-  //Update the list content if specified
-  if(listToShow === "playlists"){
-    getPlaylists();
-  }
+  var url = `${apiUrl}/me/player`;
+  var data = {device_ids: [deviceId]};
+  var method = "put";
+  //Transfer user's playback (active device)
+  axios({method, url, data,    
+    headers: {"Authorization": "Bearer " + userSettings.token}
+    }).then(function(res){
+      console.log(`Active Device: ${deviceId}`);
+      activeDeviceId = deviceId;
+      //Update the list content if specified
+      if(listToShow === "playlists"){
+        getPlaylists();
+      }
+    }).catch(function(err){
+      console.log(err);
+      if(err.response && isTokenExpiredError(err.response)){
+        console.log("refresh token");
+        getNewToken().then(function(){
+          setActiveDevice(deviceId, play, listToShow);
+        }); 
+      }      
+      else if (err.response.status === 401){
+        showError("Unauthorized. Please review the token setting and try it agian.");
+      }
+      else if(isNoActiveDeviceError(err.response)){
+        showError("No active device. Please select an availabie device first.");          
+      }
+      else if(err.response.status === 403){
+        showError("Spotify premium account is required for this action.");                 
+      }        
+    });  
 }
 
 function getDevices(showDeviceList=false){
@@ -266,7 +291,8 @@ function getDevices(showDeviceList=false){
             var item = document.createElement("li");
             var device = spotifyData.devices[i];
             item.classList.add('list-group-item');
-            item.classList.add('bg-dark');            
+            item.classList.add('bg-dark');         
+            item.setAttribute("id", device.id);      
             item.onclick = function(){
               var deviceId = this.id;     
               setActiveDevice(deviceId, false, "playlists")
@@ -277,14 +303,14 @@ function getDevices(showDeviceList=false){
         }
       }
     }).catch(function(err){
-      console.log(err);
-      if (err.response.status === 401){
-        showError("Unauthorized. Please review the token setting and try it agian.");
-      }
-      else if(err.response && isTokenExpiredError(err.response)){
+      console.log(err);      
+      if(err.response && isTokenExpiredError(err.response)){
         getNewToken().then(function(){
           getDevices(showDeviceList);
         }); 
+      }
+      else if (err.response.status === 401){
+        showError("Unauthorized. Please review the token setting and try it agian.");
       }
     });  
 }
@@ -363,14 +389,14 @@ function getCurrPlayback(){
       }
     }).catch(function(err){
       console.log(err);
-      if (err.response.status === 401){
-        showError("Unauthorized. Please review the token setting and try it agian.");
-      }
-      else if(err.response && isTokenExpiredError(err.response)){
+      if(err.response && isTokenExpiredError(err.response)){
         getNewToken().then(function(){
           getCurrPlayback();
         }); 
       }
+      else if (err.response.status === 401){
+        showError("Unauthorized. Please review the token setting and try it agian.");
+      }      
     });
 }
 
@@ -394,7 +420,12 @@ function controlPlayer(action, params = {}){
     }).catch(function(err){
       console.log(err);
       if (err.response){
-        if (err.response.status === 401){
+        if(isTokenExpiredError(err.response)){
+          getNewToken().then(function(){
+            controlPlayer(action, params);
+          }); 
+        }
+        else if (err.response.status === 401){
           showError("Unauthorized. Please review the token setting and try it agian.");
         }
         else if(isNoActiveDeviceError(err.response)){
@@ -402,12 +433,7 @@ function controlPlayer(action, params = {}){
         }
         else if(err.response.status === 403){
           showError("Spotify premium account is required for this action.");                 
-        }
-        else if(isTokenExpiredError(err.response)){
-          getNewToken().then(function(){
-            controlPlayer(action, params);
-          }); 
-        }
+        }        
       }  
     });  
 }
@@ -422,7 +448,12 @@ function shuffle(){
       setTimeout(getCurrPlayback, 50);
     }).catch(function(err){
       console.log(err);
-      if (err.response.status === 401){
+      if(err.response && isTokenExpiredError(err.response)){
+        getNewToken().then(function(){
+          shuffle();
+        }); 
+      }
+      else if (err.response.status === 401){
         showError("Unauthorized. Please review the token setting and try it agian.");
       }
       else if(isNoActiveDeviceError(err.response)){
@@ -430,12 +461,7 @@ function shuffle(){
       }
       else if(err.response.status === 403){
         showError("Spotify premium account is required for this action.");
-      }
-      else if(err.response && isTokenExpiredError(err.response)){
-        getNewToken().then(function(){
-          shuffle();
-        }); 
-      }
+      }  
     });
 }
 
@@ -452,7 +478,7 @@ function isTokenExpiredError(errorResponse){
 
 function isNoActiveDeviceError(errorResponse){
   if(errorResponse && errorResponse.data && errorResponse.data.error){
-    return errorResponse.data.error.reason === "NO_ACTIVE_DEVICE";
+    return (errorResponse.data.error.reason === "NO_ACTIVE_DEVICE") || (errorResponse.data.error.message === "Device not found");
   }
   return false;
 }
