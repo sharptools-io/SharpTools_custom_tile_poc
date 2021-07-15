@@ -3,33 +3,60 @@
 {
   "schema": "0.1.0",
   "settings": [
-    {"name": "avatarUrl", "label": "Avatar Image Url", "type": "STRING"},
     {"name": "apiSample", "label": "Sample Maker API URL", "type": "STRING"},
     {"name": "deviceId", "label": "Life360 Device ID", "type": "STRING"},
-    {"name": "googleApiKey", "type": "STRING", "label": "Google Map API Key"}
+    {"name": "avatarUrl", "label": "Avatar Image Url (optional)", "type": "STRING" }
   ],
   "name": "Map: Life 360 on Hubitat",
-  "dimensions": {"height": 2, "width": 2}
+  "dimensions": {"width": 2, "height": 2}
 }
 </script>
 <!-- Do not edit above -->
 <script src="https://cdn.sharptools.io/js/custom-tiles.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/build/ol.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/css/ol.css">
 <style> 
-body {margin:unset;}
-#map {height:100vh;}
+  html, body { margin: 0; padding: 0; height: 100%; }
+  .map {
+    height: 100%;
+    width: 100%;
+  }
+  #message {
+    position: absolute;
+    top: 0.5em;
+    background: #d80000; /* red */
+    right: 1em;
+    padding: 0.25em 0.5em;
+    border-radius: 3px;
+    max-width: calc(100% - 3em);
+    display:none;
+  }
 </style>
-<div id="map"></div>
+<div class="map" id="map"></div>
+<div id="message"></div>
 <script>
 var map, marker;
 var tileSettings = {};
 var apiSettings = {};
-
+var messageEl = document.getElementById("message");
+  
+//sort of centered on USA
+var defaultLongitude = -95.9543282,
+      defaultLatitude = 41.8644394,
+	  defaultZoom = 5;
+  
 //helper method for logging an error to console, showing a toast, and updating the tile to display 'Error'
 function showError(message){
   console.error(message);
-  stio.showToast(message, "red");
-  document.getElementById("map").innerHTML = "Error";
+  // stio.showToast(message, "red");
+  messageEl.innerHTML = "Error: " + message;
+  messageEl.style.display = 'block';
+}
+  
+function clearError(){
+  messageEl.innerHTML = "";
+  messageEl.style.display = 'none';
 }
 
 //parse out the various components from a provided Maker API URL
@@ -64,63 +91,111 @@ function getAxiosConfig(){
   return {params: {access_token: apiSettings.token}};
 }
 
+//initialize the map
+initMap();
+
 stio.ready().then(function(data){
   //get the settings from the callback
   tileSettings = data.settings; //avatarUrl, apiSample, googleApiKey
 
   if(tileSettings.deviceId == null || tileSettings.deviceId == ""){
-    showError("Device ID is not set");
+    showError("Device ID is not configured.");
   }
-  else if(tileSettings.googleApiKey == null || tileSettings.googleApiKey == ""){
-    showError("Goolge API Key is not set");
-  }
-  else if(tileSettings.avatarUrl == null || tileSettings.avatarUrl == ""){
-    showError("Avtar image URL is not set");
-  }
+  // made it optional, so no need to warn
+  // else if(tileSettings.avatarUrl == null || tileSettings.avatarUrl == ""){
+  //   showError("Avatar image URL is not set");
+  // }
   else{
     //parse the relevant settings out of the apiSample
     parseApiSample();  
-      
-    var script = document.createElement('script');
-    script.onload = function () {
-      console.log(`Google map script is loaded`);
-      initMap();
-      valuePollingScheduler();
-    };
-    //Dynamically load Google Map js and attach the API key
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${data.settings.googleApiKey}&callback=initMap&libraries=&v=weekly`;  
-    document.head.appendChild(script);
+
+    //poll for the position
+    valuePollingScheduler();
   }
 });
 
+
+
+
+function getCoordinates(pos){
+  if(pos && pos.lng && pos.lat) return [pos.lng, pos.lat]
+  return [defaultLongitude, defaultLatitude];
+}
+
 function initMap() {  
-  console.log(`Initialize Google map element`);
-  map = new google.maps.Map(document.getElementById("map"), {
-    zoom: 15,
-    disableDefaultUI: true  //To have cleaner map view
-  });   
+  console.log(`Initializing map element`);
+  map = new ol.Map({
+    target: 'map',
+    layers: [
+      new ol.layer.Tile({
+        source: new ol.source.OSM()
+      })
+    ],
+    view: new ol.View({
+      center: ol.proj.fromLonLat(getCoordinates()),
+      zoom: defaultZoom //starting zoomed out
+    })
+  }); 
 }
 function clearMarker(){
   //Remove the existing marker from the map
-  if(marker) marker.setMap(null);  
+  // if(marker) marker.setMap(null);  
+  if(marker) map.removeLayer(marker); //remove the marker layer
+}
+
+function setMapCenter(pos){
+  /* 
+	animate the map 'center' using the maps 'view'
+     https://openlayers.org/en/latest/apidoc/module-ol_View-View.html
+  */
+  map.getView().animate({
+    center: ol.proj.fromLonLat([pos.lng,pos.lat]),
+    zoom: 12 //zoom in once we have a point
+  });
+}
+
+function getIcon(){
+  //if the user provided an image URL for the icon
+  if(tileSettings.avatarUrl != null && tileSettings.avatarUrl != ""){
+    return {
+      anchor: [0.5, 0.5], //centered on the image
+      // anchorXUnits: 'fraction',
+      // anchorYUnits: 'fraction',
+      src: tileSettings.avatarUrl
+    }
+  }
+  //otherwise, use the default marker
+  else{
+    return {
+      anchor: [0.5, 1], //centered horizontal, and fixed to bottom of image
+      src: 'https://openlayers.org/en/latest/examples/data/icon.png'
+    }
+  }
 }
 
 function setMarker(map, pos) {
   clearMarker();
-  //Add marker with image to the map
-  //https://developers.google.com/maps/documentation/javascript/examples/icon-complex
-  var makerImage = {
-    url: tileSettings.avatarUrl,
-    size: new google.maps.Size(48, 48),
-    origin: new google.maps.Point(0, 0),
-    anchor: new google.maps.Point(0, 48),
-  };  
-  marker = new google.maps.Marker({
-    position: { lat: pos.lat, lng: pos.lng},    
-    map,
-    icon: makerImage,
-  }); 
-  map.setCenter(pos);
+
+  console.log('Setting marker with position', pos);
+
+  const iconFeature = new ol.Feature({
+    geometry: new ol.geom.Point(ol.proj.fromLonLat([pos.lng,pos.lat])),
+    name: 'Home',
+  });
+    
+  marker = new ol.layer.Vector({
+    source: new ol.source.Vector({
+      features: [iconFeature]
+    }),
+    style: new ol.style.Style({
+      image: new ol.style.Icon(getIcon())
+    })
+  })
+  
+  map.addLayer(marker);
+
+  //center the map on the new position
+  setMapCenter(pos);
 }
 
 function getCurrentPos(){
