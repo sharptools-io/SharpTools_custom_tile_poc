@@ -3,9 +3,10 @@
 {
   "schema": "0.1.0",
   "settings": [
-    {"name": "apiSample", "label": "Sample Maker API URL", "type": "STRING"},
-    {"name": "deviceId", "label": "Life360 Device ID", "type": "STRING"},
-    {"name": "avatarUrl", "label": "Avatar Image Url (optional)", "type": "STRING" }
+    {"name": "apiSample", "type": "STRING", "label": "Sample Maker API URL"},
+    {"name": "deviceId", "type": "STRING", "label": "Life360 Device ID"},
+    {"name": "avatarUrl", "type": "STRING", "label": "Avatar Image Url (optional)"},
+    {"name": "mapSource", "type": "STRING", "label": "Map Source (optional)"}
   ],
   "name": "Map: Life 360 on Hubitat",
   "dimensions": {"width": 2, "height": 2}
@@ -29,7 +30,7 @@
     right: 1em;
     padding: 0.25em 0.5em;
     border-radius: 3px;
-    max-width: calc(100% - 3em);
+    max-width: calc(100% - 2em);
     display:none;
   }
 </style>
@@ -45,6 +46,12 @@ var messageEl = document.getElementById("message");
 var defaultLongitude = -95.9543282,
       defaultLatitude = 41.8644394,
 	  defaultZoom = 5;
+
+var mapLayerSources = {
+  'bright': 'https://{a-d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', //'cartodb/voyager'
+  'light': 'https://{a-d}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png', //'cartodb/positron'
+  'dark': 'https://{a-d}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png', //'cartodb/dark'
+}
   
 //helper method for logging an error to console, showing a toast, and updating the tile to display 'Error'
 function showError(message){
@@ -91,21 +98,23 @@ function getAxiosConfig(){
   return {params: {access_token: apiSettings.token}};
 }
 
-//initialize the map
-initMap();
-
 stio.ready().then(function(data){
   //get the settings from the callback
   tileSettings = data.settings; //avatarUrl, apiSample, googleApiKey
 
   if(tileSettings.deviceId == null || tileSettings.deviceId == ""){
-    showError("Device ID is not configured.");
+    showError("Device ID is not set");
   }
-  // made it optional, so no need to warn
+  // else if(tileSettings.googleApiKey == null || tileSettings.googleApiKey == ""){
+  //   showError("Google API Key is not set");
+  // }
   // else if(tileSettings.avatarUrl == null || tileSettings.avatarUrl == ""){
   //   showError("Avatar image URL is not set");
   // }
   else{
+    //initialize the map
+	initMap();
+    
     //parse the relevant settings out of the apiSample
     parseApiSample();  
 
@@ -122,13 +131,35 @@ function getCoordinates(pos){
   return [defaultLongitude, defaultLatitude];
 }
 
+function getMapSource(){
+  console.log(tileSettings.mapSource)
+  if(tileSettings && tileSettings.mapSource != null && tileSettings.mapSource != ""){
+    //if the user provided a raw map source XYZ template, use it
+    if(tileSettings.mapSource.indexOf('http') === 0){
+      return new ol.source.XYZ({ url: tileSettings.mapSource });  
+    }
+    //otherwise see if the key matches one of our sources
+    else if(tileSettings.mapSource in mapLayerSources){
+      return new ol.source.XYZ({ url: mapLayerSources[tileSettings.mapSource] });  
+    }
+    //unknown - log as warning to console
+    else{
+      console.warn(`Unknown map source '${tileSettings.mapSource}'`);
+      stio.showToast("Unknown map source. Valid sources: bright, light, dark", "blue");
+    }
+  }
+  //fallback to the OSM default source
+  return new ol.source.OSM();
+    
+}
+
 function initMap() {  
   console.log(`Initializing map element`);
   map = new ol.Map({
     target: 'map',
     layers: [
       new ol.layer.Tile({
-        source: new ol.source.OSM()
+        source: getMapSource()
       })
     ],
     view: new ol.View({
@@ -168,7 +199,7 @@ function getIcon(){
   else{
     return {
       anchor: [0.5, 1], //centered horizontal, and fixed to bottom of image
-      src: 'https://openlayers.org/en/latest/examples/data/icon.png'
+      src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Map_pin_icon.svg/38px-Map_pin_icon.svg.png' //'https://openlayers.org/en/latest/examples/data/icon.png'
     }
   }
 }
@@ -195,7 +226,10 @@ function setMarker(map, pos) {
   map.addLayer(marker);
 
   //center the map on the new position
-  setMapCenter(pos);
+  setTimeout(function(){
+  	setMapCenter(pos);  
+  }, 0); //recenter on the next tick so small marker movements don't get dropped during minor animation
+  
 }
 
 function getCurrentPos(){
