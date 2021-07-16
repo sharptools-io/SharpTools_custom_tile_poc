@@ -226,7 +226,10 @@ function setMarker(map, pos) {
   map.addLayer(marker);
 
   //center the map on the new position
-  setMapCenter(pos);
+  setTimeout(function(){
+  	setMapCenter(pos);  
+  }, 0); //recenter on the next tick so small marker movements don't get dropped during minor animation
+  
 }
 
 function getCurrentPos(){
