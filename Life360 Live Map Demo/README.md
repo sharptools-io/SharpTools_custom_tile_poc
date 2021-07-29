@@ -1,9 +1,9 @@
 # Life360 Live Map (OpenStreetMap) Demo
 
+![overview](/Life360%20Live%20Map%20Demo/assets/live_map.png)       
+
 ## Overview
-
 This demo uses Life360 API to retrieve the circle member's geolocation (latitude & longitude), and display the location in the map using OpenStreetMap API. (This custom tile does NOT need the Life360 device in either SmartThings nor Hubitat.)
-
 
 Please note that this is not an official Life360 integration but just to demo the possible integrations can be implemented via Custom Tile.
 
