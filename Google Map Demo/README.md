@@ -1,10 +1,10 @@
-# Google Map + Hubitat Make API (Life360) Demo
+# OpenStreetMap + Hubitat Make API (Life360) Demo
 
 ## Overview
 
-This demo uses Hubitat Maker API to retrieve the device's geolocation (latitude & longitude), and display the location in the map using Google Map API.
+This demo uses Hubitat Maker API to retrieve the device's geolocation (latitude & longitude), and display the location in the map using OpenStreetMap API.
 
-![Quick View](/Google%20Map%20Demo/assets/location_tracker_tile.png)
+![Quick View](/Google%20Map%20Demo/assets/live_map_tile.png.png)
 
 Please note that this is using a Hubitat community developed smartapp and device driver to access Life360 geolocation info. For SmartThings users, the community developed device driver needs to be updated with the new Custom Capability before the new SmartThings REST API can retrieve these custom attributes. Or the alternative option is to access Life360 API directly to get the latitude and longitude info. See below for the detailed information and these implementation are not the "official" connection on either platform.
 
@@ -14,12 +14,6 @@ Please note that this is using a Hubitat community developed smartapp and device
 
 
 ## Getting Started
-
-### Create Google Cloud Project
-Follow the detailed steps in [Getting started with Google Maps Platform](https://developers.google.com/maps/gmp-get-started) to create a project and enable APIs & API Key
-
-Google allows $200 recurring monthly credit. 😀 
-(See [billing info](https://developers.google.com/maps/billing-credits) for details.)
 
 ### Enable Hubitat Maker API 
 Follow the steps below to enable Maker API in Hubitat admin page.
