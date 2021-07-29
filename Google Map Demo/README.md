@@ -28,13 +28,14 @@ Follow the steps below to enable Maker API in Hubitat admin page.
 * Create a custom tile
     * Select "HTML" as Type
     * Create four settings (String type)
-    ![settings](/Google%20Map%20Demo/assets/tile_settings.png)
-        * Avatar Image Url (the image you want to display in the map)
-        * Sample Maker API URL (Can be found in the Hubitat Maker API page.)
+    ![settings](/Google%20Map%20Demo/assets/custom_tile_settings.png)        
+        * Sample Maker API URL: can be found in the Hubitat Maker API page.
           ![smaple_url](/Google%20Map%20Demo/assets/sample_cloud_url.png)
-        * Life360 Device Id (Hubitat device id for Life360. Can be found by going to [SharpTools User Page](https://sharptools.io/user), tap `...` next to the Hubitat location in the Authorized Locations section, select the Life360 device, and toggle the Advanced option in the device page. )
+        * Life360 Device Id: Hubitat device id for Life360. Can be found by going to [SharpTools User Page](https://sharptools.io/user), tap `...` next to the Hubitat location in the Authorized Locations section, select the Life360 device, and toggle the Advanced option in the device page.
           ![settings](/Google%20Map%20Demo/assets/find_device_id.png)
-        * Google Map API Key (Google Map API created in the first step)          
+        * Avatar Image Url (optional): the image you want to display in the map
+        * Map Source (optional): four different map styles - default, bright, light, and dark.
+        
     * Set default dimensons to 2x2
     * Copy & paste the code from [here](/Google%20Map%20Demo/source.html)
 
