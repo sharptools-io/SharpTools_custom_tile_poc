@@ -4,7 +4,7 @@
 
 This demo uses Hubitat Maker API to retrieve the device's geolocation (latitude & longitude), and display the location in the map using OpenStreetMap API.
 
-![Quick View](/Google%20Map%20Demo/assets/live_map_tile.png.png)
+![Quick View](/Google%20Map%20Demo/assets/live_map_tile.png)
 
 Please note that this is using a Hubitat community developed smartapp and device driver to access Life360 geolocation info. For SmartThings users, the community developed device driver needs to be updated with the new Custom Capability before the new SmartThings REST API can retrieve these custom attributes. Or the alternative option is to access Life360 API directly to get the latitude and longitude info. See below for the detailed information and these implementation are not the "official" connection on either platform.
 
