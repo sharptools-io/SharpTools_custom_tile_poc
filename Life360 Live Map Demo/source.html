@@ -3,9 +3,8 @@
     {
       "schema": "0.1.0",
       "settings": [
-        {"name": "token", "type": "STRING", "label": "Life360 Access Token"},
-        {"name": "circleId", "type": "STRING", "label": "Life360 Circle ID (optional)"},
-        {"name": "userId", "type": "STRING", "label": "Life360 User ID (optional)"},
+        {"name": "token", "type": "STRING", "label": "Life360 Access Token"},        
+        {"name": "userLogin", "type": "STRING", "label": "Life360 User Login Email (optional)"},
         {"name": "avatarUrl", "type": "STRING", "label": "Avatar Image Url (optional)"},
         {"name": "mapSource", "type": "STRING", "label": "Map Source (optional)"}
       ],
@@ -84,13 +83,8 @@
         //initialize the map
         initMap();
 
-        //get Life360 circle ids if not set
-        if(tileSettings.circleId == null || tileSettings.circleId == ""){
-            setDefaultCircleId();
-        }
-        else {
-            circleId = tileSettings.circleId;
-        }
+        //get Life360 circle id where the user belongs to or default to the first cicle if user not specified
+        setCircleId();        
     
         //poll for the position
         valuePollingScheduler();
@@ -176,10 +170,8 @@
     }
     
     function setMarker(map, pos) {
-      clearMarker();
-    
-      console.log('Setting marker with position', pos);
-    
+      clearMarker();    
+      console.log('Setting marker with position', pos);    
       const iconFeature = new ol.Feature({
         geometry: new ol.geom.Point(ol.proj.fromLonLat([pos.lng,pos.lat])),
         name: 'Home',
@@ -203,14 +195,53 @@
       
     }
     
-    function setDefaultCircleId(){
-        var url = apiBaseUrl + "/circles.json"
+    function isValidEmail(email) {
+        const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        return re.test(email);
+    }
+
+    function setCircleId(){
+        var circlesUrl = apiBaseUrl + "/circles.json"
         var config = getAxiosConfig();
-        axios.get(url, config).then(function(res){
-            if (res && res.data && res.data.circles && Array.isArray(res.data.circles) && res.data.circles.length > 0){
-                circleId = res.data.circles[0].id;                
-                console.log(`Use the first avialable circle ${circleId}`);
-                getCurrentPos();
+        axios.get(circlesUrl, config).then(function(ciriceRes){
+            if (ciriceRes && ciriceRes.data && ciriceRes.data.circles && Array.isArray(ciriceRes.data.circles) && ciriceRes.data.circles.length > 0){
+                //Find the circle having the specified user
+                if (tileSettings.userLogin != null && tileSettings.userLogin != ""){                    
+                    for (let i=0; i < ciriceRes.data.circles.length; i++){
+                        var membersUrl = apiBaseUrl + "/circles/" + ciriceRes.data.circles[i].id + "/members.json"                             
+                        //Get this circle's members' data
+                        axios.get(membersUrl, config).then(function(memberRes){ 
+                            if (memberRes && memberRes.data && memberRes.data.members && Array.isArray(memberRes.data.members) && memberRes.data.members.length > 0){
+                                //Find the member based on the provided user login info
+                                var member;
+                                if(isValidEmail(tileSettings.userLogin))
+                                    member = memberRes.data.members.find(m => m.loginEmail === tileSettings.userLogin);
+                                else                                    
+                                    member = memberRes.data.members.find(m => m.id === tileSettings.userLogin);                                
+                                if(member){
+                                    circleId = ciriceRes.data.circles[i].id;
+                                    console.log(`Found the circle ${circleId} that contains member ${tileSettings.userLogin}`);
+                                    getCurrentPos();                                    
+                                    return;
+                                }
+                                else{
+                                    //The specified user is not found from all members
+                                    if(i === ciriceRes.data.circles.length - 1 && circleId == null){
+                                        showError(`Failed to find Life360 user ${tileSettings.userLogin}`);            
+                                    }
+                                }
+                            }
+                            else                                
+                                showError("Failed to get Life360 member data");                            
+                        });   
+                    }                    
+                }
+                //Otherwise use the first circle if the user is not defined in the tile settings
+                else{
+                    circleId = ciriceRes.data.circles[0].id;                
+                    console.log(`Use the first avialable circle ${circleId}`);
+                    getCurrentPos();
+                }                
             }
             else{
                 showError("Error finding Life360 circles");
@@ -228,13 +259,15 @@
                 var lngAttr;
                 if (res && res.data && res.data.members && Array.isArray(res.data.members) && res.data.members.length > 0){
                     var member;                
-                    //Default to get the 1st user if the userId is not specified
-                    if(tileSettings.userId == null || tileSettings.userId == ""){
-                        member = res.data.members[0];
-                    }
-                    else
-                        member = res.data.members.find(m => m.id === tileSettings.userId)
-                    
+                    //Default to get the 1st user if the user login is not specified
+                    if(tileSettings.userLogin == null || tileSettings.userLogin == "")
+                        member = res.data.members[0];                    
+                    else{
+                        if(isValidEmail(tileSettings.userLogin))
+                            member = res.data.members.find(m => m.loginEmail === tileSettings.userLogin);
+                        else
+                            member = res.data.members.find(m => m.id === tileSettings.userLogin);
+                    }                                            
                     if (member){
                         var pos ={
                             lat: member.location.latitude,
@@ -243,8 +276,8 @@
                         //Update the marker in the map
                         setMarker(map, pos);
                     }
-                    else 
-                        showError(`Failed to find Life360 user ${tileSettings.userId}`);
+                    else                        
+                        showError(`Failed to find Life360 user ${tileSettings.userLogin}`);                    
                 }
                 else
                     showError("Failed to get Life360 member data");
