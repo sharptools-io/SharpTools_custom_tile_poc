@@ -11,7 +11,7 @@ Please note that this is not an official Life360 integration but just to demo th
 
 ### Authorize Life360 (Retrieve Access Token)
 Follow the steps below to authorize your Life360 via Life360 OAuth and retrieve the access token:
-* Go to "https://smart-life-360.glitch.me/" in the web brower
+* Go to "https://smart-life-360.glitch.me/" in the web browser
 * Tap "Authorize" button, and sign in using your Life360 credential 
 * When completed, tap the button to copy the access token to be used in the tile settings later.
 
