@@ -12,7 +12,9 @@ See details [here](/Spotify%20Demo/README.md) 👈
 
 ## Life360 Live Map Demo
 Display Life360 user's real-time geolocation in the OpenStreetMap without needing the Life360 device in SmartThings/Hubitat
+
 ![Quick View](/Life360%20Live%20Map%20Demo/assets/live_map.png)     
+
 See details [here](/Life360%20Live%20Map%20Demo/README.md) 👈
 
 ## Google Line Chart & COVID19 Status Demo
