@@ -1,4 +1,4 @@
-# Life360 Live Map (OpenStreetMap)Demo
+# Life360 Live Map (OpenStreetMap) Demo
 
 ## Overview
 
@@ -11,15 +11,12 @@ Please note that this is not an official Life360 integration but just to demo th
 
 ### Authorize Life360 (Retrieve Access Token)
 Follow the steps below to authorize your Life360 via Life360 OAuth and retrieve the access token:
-* Go to "https://geode-pie-thistle.glitch.me/" in the web brower
+* Go to "https://smart-life-360.glitch.me/" in the web brower
 * Tap "Authorize" button, and sign in using your Life360 credential 
-* When the authorization is compeled, tap the blurred token field and copy the access token.
-* (Optional) Click on "Get Circles" in the page and verify the retrieved the circle information. Copy the Circle ID from the retrieved data to be used in the Tile Settings.
-* (Optional) Click on "View" next to the Members under the retrieved Circle informaiton and copy the desired User ID to be used in the Tile Settings.
-
+* When completed, tap the button to copy the access token to be used in the tile settings later.
 
 ### Create Custom Tile
-* Tap the link to create the custom tile using this demo source code
+* Tap [here](https://sharptools.io/developer/custom-tiles/import/?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjamesguitar3%2FSharpTools_custom_tile_poc%2Fmain%2FLife360%2520Live%2520Map%2520Demo%2Fsource.html) to create the custom tile using this demo source code
 * Save the Custom tile.
 
 ### Deploy Custom Tile
