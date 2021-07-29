@@ -4,7 +4,7 @@
 
 This demo uses Hubitat Maker API to retrieve the device's geolocation (latitude & longitude), and display the location in the map using OpenStreetMap API.
 
-![Quick View](/Live%20Map%20Demo/assets/live_map_tile.png)
+![Quick View](/Google%20Map%20Demo/assets/live_map_tile.png)
 
 Please note that this is using a Hubitat community developed smartapp and device driver to access Life360 geolocation info. For SmartThings users, the community developed device driver needs to be updated with the new Custom Capability before the new SmartThings REST API can retrieve these custom attributes. Or the alternative option is to access Life360 API directly to get the latitude and longitude info. See below for the detailed information and these implementation are not the "official" connection on either platform.
 
@@ -28,23 +28,23 @@ Follow the steps below to enable Maker API in Hubitat admin page.
 * Create a custom tile
     * Select "HTML" as Type
     * Create four settings (String type)
-    ![settings](/Live%20Map%20Demo/assets/custom_tile_settings.png)        
+    ![settings](/Google%20Map%20Demo/assets/custom_tile_settings.png)        
         * Sample Maker API URL: can be found in the Hubitat Maker API page.
-          ![smaple_url](/Live%20Map%20Demo/assets/sample_cloud_url.png)
+          ![smaple_url](/Google%20Map%20Demo/assets/sample_cloud_url.png)
         * Life360 Device Id: Hubitat device id for Life360. Can be found by going to [SharpTools User Page](https://sharptools.io/user), tap `...` next to the Hubitat location in the Authorized Locations section, select the Life360 device, and toggle the Advanced option in the device page.
-          ![settings](/Live%20Map%20Demo/assets/find_device_id.png)
+          ![settings](/Google%20Map%20Demo/assets/find_device_id.png)
         * Avatar Image Url (optional): the image you want to display in the map
         * Map Source (optional): four different map styles - default, bright, light, and dark.
         
     * Set default dimensons to 2x2
-    * Copy & paste the code from [here](/Live%20Map%20Demo/source.html)
+    * Copy & paste the code from [here](/Google%20Map%20Demo/source.html)
 
 ### Deploy Custom Tile
 * Go to the desired dashboard, Edit, and Add Item. Tap "Custom Tile" in the Other section and add this custom tile.
 
 * Edit the tile and fill-in the Hubitat Maker API sample URL and Life360 device id.
 
-  ![Edit custom tile](/Live%20Map%20Demo/assets/tile_editor.png)
+  ![Edit custom tile](/Google%20Map%20Demo/assets/tile_editor.png)
 
 * Save
 
