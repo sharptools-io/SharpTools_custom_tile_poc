@@ -10,12 +10,12 @@ Integration with Spotify using Spotify Developer App and API to show the playlis
 
 See details [here](/Spotify%20Demo/README.md) 👈
 
-## Google Map & Hubitat Maker API (Life360) Demo
-Uses Hubitat Maker API to retrieve Life360 device's geolocation and display in Google Map.
+## OpenStreetMap & Hubitat Maker API (Life360) Demo
+Uses Hubitat Maker API to retrieve Life360 device's geolocation and display in OpenStreetMap.
 
-![Quick View](/Google%20Map%20Demo/assets/location_tracker_tile.png)
+![Quick View](/Live%20Map%20Demo/assets/live_map_tile.png)
 
-See details [here](/Google%20Map%20Demo/README.md) 👈
+See details [here](/Live%20Map%20Demo/README.md) 👈
 
 ## Google Line Chart & COVID19 Status Demo
 Retrieve COVID19 data from [DISEASE.SH](https://github.com/disease-sh/api), and display the cases Google Line Chart.
