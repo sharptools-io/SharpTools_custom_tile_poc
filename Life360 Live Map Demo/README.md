@@ -33,7 +33,7 @@ These steps assume you've already imported the custom tile using the button towa
 * Tap the `...` in the top-right corner of the newly added tile and select **Edit**
 * Paste the **Life360 Access Token** from the steps above. 
 * If you have multiple members in your circle(s) and would like to specify a set of users, you can add their Life360 user emails in the **User Filter* field and separate them by comma.
-![tile settings](/Life360%20Live%20Map%20Demo/assets/tile_settings.jpg)
+![tile settings](/Life360%20Live%20Map%20Demo/assets/tile_settings.jpeg)
 
 ### Optional Settings
 * **Map Source** - customize the map appearance with 'bright', 'light', or 'dark' 
@@ -42,6 +42,6 @@ These steps assume you've already imported the custom tile using the button towa
   * The [authorization page](https://smart-life-360.glitch.me/) has a utility under Get Circles -> View Members to confirm email addresses
 * **Display User's Name** - check to display the user's first name under the user's avatar or pin image
 * **Use Pin Icon** - check to use the pin image to mark the user in the map, instead of using the user's avatar image
-![tile settings](/Life360%20Live%20Map%20Demo/assets/pin_markers.jpg)
+![pin markers](/Life360%20Live%20Map%20Demo/assets/pin_markers.jpeg)
 
 ### Done
