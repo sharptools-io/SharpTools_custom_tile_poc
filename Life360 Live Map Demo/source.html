@@ -1,7 +1,7 @@
 <!-- Do not edit below -->
 <script type="application/json" id="tile-settings">
     {
-      "schema": "0.2.0",
+      "schema": "0.1.0",
       "settings": [        
         {"name": "token", "type": "STRING", "label": "Life360 Access Token"},        
         {"name": "userId", "type": "STRING", "label": "User Filter (emails separated by comma)"},        
@@ -39,7 +39,7 @@
     <div id="message"></div>
     <script>
     var map;
-    var markers = [];    
+    var markers = [];        
     var tileSettings = {};    
     var apiBaseUrl = "https://api.life360.com/v3";
     var messageEl = document.getElementById("message");    
@@ -131,13 +131,9 @@
     }   
 
     function getIcon(user=null){
-      //Use the Life360 member's avatar image by default
+      //Use Life360 avatar image by default, which will be added via Overlay for advanced styling, instead of layer image.
       if(!tileSettings.isPinSelected && user && user.avatar){
-        return new ol.style.Icon({              
-          anchor: [0.5, 0.5], //centered on the image
-          src: user.avatar,
-          scale: 0.4,              
-        })          
+        return null;           
       }
       //Use the general pin image if user prefers
       else{
@@ -165,11 +161,34 @@
     }   
 
     function clearMarkers(map){      
-      for (var i = markers.length - 1; i >= 0; i--){
-        map.removeLayer(markers[i]); //remove the marker layer
+      //Remove the pin icon image and map markers
+      for (var i = markers.length - 1; i >= 0; i--){        
+        map.removeLayer(markers[i].vectorLayer); //remove the marker layer        
+        if(markers[i].overlay) //Avatar image is addaed via overlay for rounded image style
+          map.removeOverlay(markers[i].overlay)
         markers.splice(i, 1);
-      }      
-    }    
+      } 
+    } 
+    
+    function getMarkerLayerStyle(member){
+      return new ol.style.Style({
+        image: getIcon(member), //Determine if we should should the pin image via layer image
+        text:  getText(member), //Marker label (member's first name if user prefers to show the label)
+      })
+    }   
+    
+    function getFeatureOverlay(feature, member){
+      var imgElement = document.createElement("img");
+      imgElement.id = member.id;
+      imgElement.src = member.avatar;
+      imgElement.style = "border-radius: 50%; width: 40%; height: 40%; min-width:38px; margin-left:auto;margin-right:auto; display:block;"
+      return new ol.Overlay({
+        stopEvent: false,
+        position: feature.getGeometry().getCoordinates(),
+        positioning: 'center-center',
+        element: imgElement
+      });    
+    }
       
     function setMarkers(map, members){
       clearMarkers(map);
@@ -187,20 +206,19 @@
         });
         var vectorSource = new ol.source.Vector({
           features: [iconFeature]
-        });        
-        //Marker label (member's first name if user prefers to show the label)
-        var textStyle = getText(member);        
-        //Marker image
-        var imageStyle = getIcon(member);
+        });                
         //Create the marker
-        var marker = new ol.layer.Vector({
+        var marker = {}         
+        marker.vectorLayer = new ol.layer.Vector({
           source: vectorSource,
-          style: new ol.style.Style({
-            image: imageStyle,
-            text: textStyle,
-          })
-        })        
-        map.addLayer(marker);
+          style: getMarkerLayerStyle(member),
+        })
+        map.addLayer(marker.vectorLayer);
+        //Add avatar image via Overlay for the advanced styling, ex rounded image
+        if(!tileSettings.isPinSelected && member && member.avatar){
+          marker.overlay = getFeatureOverlay(iconFeature, member);          
+          map.addOverlay(marker.overlay);
+        }
         markers.push(marker);      
         if(!bounds)
           bounds = new ol.extent.createEmpty();
@@ -267,8 +285,7 @@
           var config = getAxiosConfig();          
           //User may set the user emails to filter just some users to be displayed
           var isUserFilterSet = tileSettings.userId != null && tileSettings.userId != "";
-          var filterList = isUserFilterSet ? parseUserId() : [];
-          var userIdsNotFound = [];
+          var filterList = isUserFilterSet ? parseUserId() : [];          
           for (var i=0; i < circles.length; i++){            
             var promise = new Promise(function(res, rej){
               var membersUrl = apiBaseUrl + "/circles/" + circles[i].id + "/members.json"                                           
@@ -283,32 +300,18 @@
                   }
                   else{                                        
                     //Filter the users based on the emails(ids) provided                    
-                    for (var j = filterList.length - 1; j >= 0; j--){
-                      var filteredUser;
-                      //Email format
-                      if(isValidEmail(filterList[j]))
-                        filteredUser = response.data.members.find(m => m.loginEmail === filterList[j])                      
-                      //Or Life360 user id format
-                      else
-                        filteredUser = response.data.members.find(m => m.id === filterList[j])                      
-                      
-                      if (filteredUser){
-                        members.push(filteredUser);    
-                        filterList.splice(j, 1); 
-
-                        //The user not fround from previous circle might be found in this circle.
-                        if(userIdsNotFound.indexOf(filterList[j]) >= 0)
-                          userIdsNotFound.splice(userIdsNotFound.indexOf(filterList[j]), 1);
-                      }
-                      else if (userIdsNotFound.indexOf(filterList[j]) < 0)
-                        userIdsNotFound.push(filterList[j]);
+                    for (var j = filterList.length - 1; j >= 0; j--){                      
+                      //Find by email or id
+                      var filteredUser = response.data.members.find(function(m){return m.id === filterList[j] || m.loginEmail === filterList[j]})                      
+                      if (filteredUser)
+                        members.push(filteredUser);                                                
                     }
                     res();                  
                   }
                 }
               }).catch(function(err){
                 console.error(err);
-                showError(`Failed to get members from circie ${circle.name}`)
+                showError(`Failed to get members from circie ${circles[i].name}`)
                 rej(err)
               });
             });
@@ -320,13 +323,17 @@
             var memberIdsMap = members.map(function(m){return m.id});
             members = members.filter(function(member, pos){              
               return memberIdsMap.indexOf(member.id) === pos;
-            });            
-            
-            //Remind users the specific users cannot be found from the members if applicable
-            if(isUserFilterSet && userIdsNotFound.length > 0)
-              showError(`Failed to find user(s): ${userIdsNotFound}`);
-
-            //TODO check if any missing id not identified as member
+            });                        
+            //Remind users the specific users cannot be found from the members if applicable            
+            if(isUserFilterSet && filterList.length > 0){
+              var userIdsNotFound = [];
+              for (var filterId of filterList){                
+                var idFound = members.some(function(m){return m.id === filterId || m.loginEmail === filterId});
+                if(!idFound) {userIdsNotFound.push(filterId)};
+              }
+              if (userIdsNotFound.length > 0)
+                showError(`Failed to find user(s): ${userIdsNotFound}`);
+            }            
             resolve(members);
           }); 
         });              
@@ -334,6 +341,7 @@
     }
 
     function showUsersInMap(){
+      clearError();
       getMembers().then(function(members){        
         //Mark the members in the map        
         setMarkers(map, members);
