@@ -1,12 +1,13 @@
 <!-- Do not edit below -->
 <script type="application/json" id="tile-settings">
     {
-      "schema": "0.1.0",
-      "settings": [
+      "schema": "0.2.0",
+      "settings": [        
         {"name": "token", "type": "STRING", "label": "Life360 Access Token"},        
-        {"name": "userId", "type": "STRING", "label": "Life360 User Email (optional)"},
-        {"name": "avatarUrl", "type": "STRING", "label": "Avatar Image Url (optional)"},
-        {"name": "mapSource", "type": "STRING", "label": "Map Source (optional)"}
+        {"name": "userId", "type": "STRING", "label": "User Filter (emails separated by comma)"},        
+        {"name": "mapSource", "type": "STRING", "label": "Map Source (optional)"},        
+        {"name": "isNameSelected", "type": "BOOLEAN", "label": "Display User's Name"},
+        {"name": "isPinSelected", "type": "BOOLEAN", "label": "Use Pin Icon (default: User avatar)"}
       ],
       "name": "Life 360 Live Map (OpenStreetMap)",
       "dimensions": {"width": 2, "height": 2}
@@ -37,11 +38,11 @@
     <div class="map" id="map"></div>
     <div id="message"></div>
     <script>
-    var map, marker;
+    var map;
+    var markers = [];    
     var tileSettings = {};    
     var apiBaseUrl = "https://api.life360.com/v3";
-    var messageEl = document.getElementById("message");
-    var circleId;
+    var messageEl = document.getElementById("message");    
       
     //sort of centered on USA
     var defaultLongitude = -95.9543282,
@@ -82,22 +83,17 @@
       else{
         //initialize the map
         initMap();
-
-        //get Life360 circle id where the user belongs to or default to the first cicle if user not specified
-        setCircleId();        
-    
         //poll for the position
         valuePollingScheduler();
       }
     });
     
     function getCoordinates(pos){
-      if(pos && pos.lng && pos.lat) return [pos.lng, pos.lat]
+      if(pos && pos.longitude && pos.latitude) return [pos.longitude, pos.latitude]
       return [defaultLongitude, defaultLatitude];
     }
     
-    function getMapSource(){
-      console.log(tileSettings.mapSource)
+    function getMapSource(){      
       if(tileSettings && tileSettings.mapSource != null && tileSettings.mapSource != ""){
         //if the user provided a raw map source XYZ template, use it
         if(tileSettings.mapSource.indexOf('http') === 0){
@@ -129,163 +125,223 @@
         ],
         view: new ol.View({
           center: ol.proj.fromLonLat(getCoordinates()),
-          zoom: defaultZoom //starting zoomed out
+          zoom: defaultZoom, //starting zoomed out          
         })
       }); 
-    }
-    function clearMarker(){
-      //Remove the existing marker from the map
-      // if(marker) marker.setMap(null);  
-      if(marker) map.removeLayer(marker); //remove the marker layer
-    }
-    
-    function setMapCenter(pos){
-      /* 
-        animate the map 'center' using the maps 'view'
-         https://openlayers.org/en/latest/apidoc/module-ol_View-View.html
-      */
-      map.getView().animate({
-        center: ol.proj.fromLonLat([pos.lng,pos.lat]),
-        zoom: 12 //zoom in once we have a point
-      });
-    }
-    
-    function getIcon(){
-      //if the user provided an image URL for the icon
-      if(tileSettings.avatarUrl != null && tileSettings.avatarUrl != ""){
-        return {
+    }   
+
+    function getIcon(user=null){
+      //Use the Life360 member's avatar image by default
+      if(!tileSettings.isPinSelected && user && user.avatar){
+        return new ol.style.Icon({              
           anchor: [0.5, 0.5], //centered on the image
-          // anchorXUnits: 'fraction',
-          // anchorYUnits: 'fraction',
-          src: tileSettings.avatarUrl
-        }
+          src: user.avatar,
+          scale: 0.4,              
+        })          
       }
-      //otherwise, use the default marker
+      //Use the general pin image if user prefers
       else{
-        return {
+        return new ol.style.Icon({              
           anchor: [0.5, 1], //centered horizontal, and fixed to bottom of image
-          src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Map_pin_icon.svg/38px-Map_pin_icon.svg.png' //'https://openlayers.org/en/latest/examples/data/icon.png'
-        }
+          src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Map_pin_icon.svg/38px-Map_pin_icon.svg.png',                  
+        })                    
       }
     }
     
-    function setMarker(map, pos) {
-      clearMarker();    
-      console.log('Setting marker with position', pos);    
-      const iconFeature = new ol.Feature({
-        geometry: new ol.geom.Point(ol.proj.fromLonLat([pos.lng,pos.lat])),
-        name: 'Home',
-      });
-        
-      marker = new ol.layer.Vector({
-        source: new ol.source.Vector({
+    function getText(user){
+      //Display the user's first name if user checked the option
+      if(tileSettings.isNameSelected){
+        return new ol.style.Text({
+          text: user.firstName,
+          offsetY: !tileSettings.isPinSelected && user && user.avatar ? 40 : 10,
+          scale: 1.5,
+          fill: new ol.style.Fill({
+              color: tileSettings.mapSource === "dark" ? [255, 255, 255, 1] : [0, 0, 0, 1], //Black or white text color
+          })
+        }) 
+      }
+      else
+        return null;
+    }   
+
+    function clearMarkers(map){      
+      for (var i = markers.length - 1; i >= 0; i--){
+        map.removeLayer(markers[i]); //remove the marker layer
+        markers.splice(i, 1);
+      }      
+    }    
+      
+    function setMarkers(map, members){
+      clearMarkers(map);
+      //Testing 
+      // members[0].location = {
+      //   latitude: 33.049153 + Math.floor(Math.random()*10)/10,
+      //   longitude: -96.717175 + Math.floor(Math.random()*10)/10
+      // }            
+
+      //To collect the vectors' (markers) extent in bounds
+      var bounds;
+      for (var member of members){                
+        var iconFeature = new ol.Feature({
+          geometry: new ol.geom.Point(ol.proj.fromLonLat(getCoordinates(member.location))),          
+        });
+        var vectorSource = new ol.source.Vector({
           features: [iconFeature]
-        }),
-        style: new ol.style.Style({
-          image: new ol.style.Icon(getIcon())
-        })
-      })
-      
-      map.addLayer(marker);
-    
-      //center the map on the new position
+        });        
+        //Marker label (member's first name if user prefers to show the label)
+        var textStyle = getText(member);        
+        //Marker image
+        var imageStyle = getIcon(member);
+        //Create the marker
+        var marker = new ol.layer.Vector({
+          source: vectorSource,
+          style: new ol.style.Style({
+            image: imageStyle,
+            text: textStyle,
+          })
+        })        
+        map.addLayer(marker);
+        markers.push(marker);      
+        if(!bounds)
+          bounds = new ol.extent.createEmpty();
+        //Extend the bounds for the map to fit all markers later
+        bounds = ol.extent.extend(bounds, vectorSource.getExtent());        
+      }      
+      if(bounds){
+        //Zoom & center the map        
+        fitMapToMarkers(map, bounds);        
+      }
+    }
+
+    function fitMapToMarkers(map, bounds){
+      //Automatically fit (zoom & center) the map to include all markers
       setTimeout(function(){
-          setMapCenter(pos);  
-      }, 0); //recenter on the next tick so small marker movements don't get dropped during minor animation
-      
+        map.getView().fit(bounds, 
+          {
+            duration: 1000, 
+            padding:[100,100,100,100], //To add some space between the marker images and the edge of the map
+            maxZoom: markers.length > 1 ? 20 : 15, //Don't zoome in too much when there is only one marker
+          });
+      }, 0); //recenter on the next tick so small marker movements don't get dropped during minor animation        
     }
     
     function isValidEmail(email) {
-        const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return re.test(email);
+      const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+      return re.test(email);        
     }
 
-    function setCircleId(){
-        var circlesUrl = apiBaseUrl + "/circles.json"
+    function parseUserId(){      
+      if(tileSettings.userId != null){
+        //Remove white spaces
+        var tempUserStr = tileSettings.userId.replace(/\s/g, '');
+        //Parse the string into user email(or id) array
+        return tempUserStr.split(',');
+      }      
+    }
+
+    function getCircles(){
+      return new Promise(function(resolve, reject){
+        var circlesUrl = apiBaseUrl + "/circles.json";
         var config = getAxiosConfig();
-        axios.get(circlesUrl, config).then(function(ciriceRes){
-            if (ciriceRes && ciriceRes.data && ciriceRes.data.circles && Array.isArray(ciriceRes.data.circles) && ciriceRes.data.circles.length > 0){
-                //Find the circle having the specified user
-                if (tileSettings.userId != null && tileSettings.userId != ""){                    
-                    for (let i=0; i < ciriceRes.data.circles.length; i++){
-                        var membersUrl = apiBaseUrl + "/circles/" + ciriceRes.data.circles[i].id + "/members.json"                             
-                        //Get this circle's members' data
-                        axios.get(membersUrl, config).then(function(memberRes){ 
-                            if (memberRes && memberRes.data && memberRes.data.members && Array.isArray(memberRes.data.members) && memberRes.data.members.length > 0){
-                                //Find the member based on the provided user login info
-                                var member;
-                                if(isValidEmail(tileSettings.userId))
-                                    member = memberRes.data.members.find(m => m.loginEmail === tileSettings.userId);
-                                else                                    
-                                    member = memberRes.data.members.find(m => m.id === tileSettings.userId);                                
-                                if(member){
-                                    circleId = ciriceRes.data.circles[i].id;
-                                    console.log(`Found the circle ${circleId} that contains member ${tileSettings.userId}`);
-                                    getCurrentPos();                                    
-                                    return;
-                                }
-                                else{
-                                    //The specified user is not found from all members
-                                    if(i === ciriceRes.data.circles.length - 1 && circleId == null){
-                                        showError(`Failed to find Life360 user ${tileSettings.userId}`);            
-                                    }
-                                }
-                            }
-                            else                                
-                                showError("Failed to get Life360 member data");                            
-                        });   
-                    }                    
-                }
-                //Otherwise use the first circle if the user is not defined in the tile settings
-                else{
-                    circleId = ciriceRes.data.circles[0].id;                
-                    console.log(`Use the first avialable circle ${circleId}`);
-                    getCurrentPos();
-                }                
-            }
-            else{
-                showError("Error finding Life360 circles");
-            }            
-        });                
+        //Iterate through all circles to get all members
+        axios.get(circlesUrl, config).then(function(res){     
+          if(res && res.data && res.data.circles && Array.isArray(res.data.circles)){
+            if(res.data.circles.length === 0)
+              showError("No circle found.");
+            resolve(res.data.circles);
+          }      
+        }).catch(function(err){
+          console.error(`Failed to get circle(s). Error: ${err.message}`);
+          showError("Failed to get circle(s)");
+          reject(err);
+        });
+      });
     }
-    
-    function getCurrentPos(){
-        if (circleId != null && tileSettings.token != null){
-            var url = apiBaseUrl + "/circles/" + circleId + "/members.json"        
-            var config = getAxiosConfig();
-            //Get the Life360 members' data
-            axios.get(url, config).then(function(res){ 
-                var latAttr;
-                var lngAttr;
-                if (res && res.data && res.data.members && Array.isArray(res.data.members) && res.data.members.length > 0){
-                    var member;                
-                    //Default to get the 1st user if the user login is not specified
-                    if(tileSettings.userId == null || tileSettings.userId == "")
-                        member = res.data.members[0];                    
-                    else{
-                        if(isValidEmail(tileSettings.userId))
-                            member = res.data.members.find(m => m.loginEmail === tileSettings.userId);
-                        else
-                            member = res.data.members.find(m => m.id === tileSettings.userId);
-                    }                                            
-                    if (member){
-                        var pos ={
-                            lat: member.location.latitude,
-                            lng: member.location.longitude,
-                        }
-                        //Update the marker in the map
-                        setMarker(map, pos);
+
+    function getMembers(){
+      var members = []; //reset 
+      var promises = [];      
+      return new Promise(function(resolve, reject){                
+        //Get all members from all circles (and filter by the user email/ids provided by the user as needed)
+        getCircles().then(function(circles){          
+          var config = getAxiosConfig();          
+          //User may set the user emails to filter just some users to be displayed
+          var isUserFilterSet = tileSettings.userId != null && tileSettings.userId != "";
+          var filterList = isUserFilterSet ? parseUserId() : [];
+          var userIdsNotFound = [];
+          for (var i=0; i < circles.length; i++){            
+            var promise = new Promise(function(res, rej){
+              var membersUrl = apiBaseUrl + "/circles/" + circles[i].id + "/members.json"                                           
+              //Get this circle's members
+              axios.get(membersUrl, config).then(function(response){                 
+                if (response && response.data && response.data.members && Array.isArray(response.data.members)){
+                  //No user filter
+                  if(!isUserFilterSet){
+                    //Add all members if no filter specified
+                    members = members.concat(response.data.members);
+                    res();
+                  }
+                  else{                                        
+                    //Filter the users based on the emails(ids) provided                    
+                    for (var j = filterList.length - 1; j >= 0; j--){
+                      var filteredUser;
+                      //Email format
+                      if(isValidEmail(filterList[j]))
+                        filteredUser = response.data.members.find(m => m.loginEmail === filterList[j])                      
+                      //Or Life360 user id format
+                      else
+                        filteredUser = response.data.members.find(m => m.id === filterList[j])                      
+                      
+                      if (filteredUser){
+                        members.push(filteredUser);    
+                        filterList.splice(j, 1); 
+
+                        //The user not fround from previous circle might be found in this circle.
+                        if(userIdsNotFound.indexOf(filterList[j]) >= 0)
+                          userIdsNotFound.splice(userIdsNotFound.indexOf(filterList[j]), 1);
+                      }
+                      else if (userIdsNotFound.indexOf(filterList[j]) < 0)
+                        userIdsNotFound.push(filterList[j]);
                     }
-                    else                        
-                        showError(`Failed to find Life360 user ${tileSettings.userId}`);                    
+                    res();                  
+                  }
                 }
-                else
-                    showError("Failed to get Life360 member data");
+              }).catch(function(err){
+                console.error(err);
+                showError(`Failed to get members from circie ${circle.name}`)
+                rej(err)
+              });
             });
-        }
+            promises.push(promise);
+          };
+          //Wait for all axios member queries are done
+          Promise.all(promises).then(function(){
+            //Prune duplicated members        
+            var memberIdsMap = members.map(function(m){return m.id});
+            members = members.filter(function(member, pos){              
+              return memberIdsMap.indexOf(member.id) === pos;
+            });            
+            
+            //Remind users the specific users cannot be found from the members if applicable
+            if(isUserFilterSet && userIdsNotFound.length > 0)
+              showError(`Failed to find user(s): ${userIdsNotFound}`);
+
+            //TODO check if any missing id not identified as member
+            resolve(members);
+          }); 
+        });              
+      });       
     }
+
+    function showUsersInMap(){
+      getMembers().then(function(members){        
+        //Mark the members in the map        
+        setMarkers(map, members);
+      });
+    }
+
     function valuePollingScheduler(){
-      getCurrentPos();
+      showUsersInMap();
       console.log("polling Life360 data in 5 minutes");
       setTimeout(valuePollingScheduler, 300000);
     }
