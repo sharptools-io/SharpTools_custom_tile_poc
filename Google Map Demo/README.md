@@ -1,4 +1,11 @@
-# OpenStreetMap + Hubitat Make API (Life360) Demo
+# OpenStreetMap + Hubitat Maker API (Life360) Demo
+
+
+>🛑 <strong>Warning:</strong>  
+> Use the new version at https://community.sharptools.io/t/life360-live-map/7135
+>
+> The new version talks *directly* to Life360, so it isn't dependent on Hubitat or a custom driver. 
+
 
 ## Overview
 
