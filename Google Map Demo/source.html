@@ -1,51 +1,22 @@
-<!-- Do not edit below -->
-<script type="application/json" id="tile-settings">
-{
-  "schema": "0.1.0",
-  "settings": [
-    {"name": "apiSample", "type": "STRING", "label": "Sample Maker API URL"},
-    {"name": "deviceId", "type": "STRING", "label": "Life360 Device ID"},
-    {"name": "avatarUrl", "type": "STRING", "label": "Avatar Image Url (optional)"},
-    {"name": "mapSource", "type": "STRING", "label": "Map Source (optional)"}
-  ],
-  "name": "Map: Life 360 on Hubitat",
-  "dimensions": {"width": 2, "height": 2}
-}
-</script>
-<!-- Do not edit above -->
 <script src="https://cdn.sharptools.io/js/custom-tiles.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/build/ol.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.5.0/css/ol.css">
-<style> 
-  html, body { margin: 0; padding: 0; height: 100%; }
-  .map {
-    height: 100%;
-    width: 100%;
-  }
-  #message {
-    position: absolute;
-    top: 0.5em;
-    background: #d80000; /* red */
-    right: 1em;
-    padding: 0.25em 0.5em;
-    border-radius: 3px;
-    max-width: calc(100% - 2em);
-    display:none;
-  }
-</style>
+
 <div class="map" id="map"></div>
 <div id="message"></div>
+
 <script>
 var map, marker;
-var tileSettings = {};
-var apiSettings = {};
+var thing, mapSource, avatarUrl;
 var messageEl = document.getElementById("message");
   
-//sort of centered on USA
-var defaultLongitude = -95.9543282,
-      defaultLatitude = 41.8644394,
-	  defaultZoom = 5;
+//roughly centered on USA
+var DEFAULT_POSITION = {
+  longitude: -95.9543282,
+  latitude: 41.8644394
+}
+var DEFAULT_ZOOM = 5;
 
 var mapLayerSources = {
   'bright': 'https://{a-d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', //'cartodb/voyager'
@@ -53,98 +24,107 @@ var mapLayerSources = {
   'dark': 'https://{a-d}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png', //'cartodb/dark'
 }
   
-//helper method for logging an error to console, showing a toast, and updating the tile to display 'Error'
-function showError(message){
-  console.error(message);
-  // stio.showToast(message, "red");
-  messageEl.innerHTML = "Error: " + message;
-  messageEl.style.display = 'block';
-}
-  
-function clearError(){
-  messageEl.innerHTML = "";
-  messageEl.style.display = 'none';
-}
 
-//parse out the various components from a provided Maker API URL
-function parseApiSample(sampleUrl){
-  //if we weren't passed in an explicit URL to parse
-  if(sampleUrl == null){
-    //then try to use the sample API URL from the tile settings
-    sampleUrl = tileSettings.apiSample;
-  }
-  //if no URL was provided, let the user know
-  if(sampleUrl == null || sampleUrl === "") showError("No API URL was provided. Please configure the tile.");
-  //if the api isn't the cloud API, let the user know
-  if(sampleUrl.indexOf("cloud.hubitat.com") < 0) showError("Please use the Hubitat Maker API CLOUD URI.")
 
-  //try to parse out the various parts of the URL we need with a regular expression
-  var re = /https:\/\/cloud\.hubitat\.com\/api\/([^\/]+)\/apps\/([\d]+)\/[^\?]+\?access_token\=([^\&]+)/;
-  var match = sampleUrl.match(re); //array of the various regex matches (0: full string, 1: hub id, 2: app id, 3: token)
-
-  //pass the parsed settings back into the top-level variable
-  apiSettings = { 
-    "hubId": match[1], 
-    "appId": match[2], 
-    "token": match[3]
-  };
-}
-//helper function to format the parsed data back into a base URI
-function getBaseUrl(){
-  return `https://cloud.hubitat.com/api/${apiSettings.hubId}/apps/${apiSettings.appId}`
-}
-//helper function to format the token into an axios 'data' object to attach the token as a parameter
-function getAxiosConfig(){
-  return {params: {access_token: apiSettings.token}};
-}
 
 stio.ready().then(function(data){
-  //get the settings from the callback
-  tileSettings = data.settings; //avatarUrl, apiSample, googleApiKey
+  //get the settings from the callback and hoist them
+	thing = data.settings.thing;
+  mapSource = data.settings.mapSource;
+  avatarUrl = data.settings.avatarUrl;
 
-  if(tileSettings.deviceId == null || tileSettings.deviceId == ""){
-    showError("Device ID is not set");
-  }
-  // else if(tileSettings.googleApiKey == null || tileSettings.googleApiKey == ""){
-  //   showError("Google API Key is not set");
-  // }
-  // else if(tileSettings.avatarUrl == null || tileSettings.avatarUrl == ""){
-  //   showError("Avatar image URL is not set");
-  // }
-  else{
-    //initialize the map
-	initMap();
-    
-    //parse the relevant settings out of the apiSample
-    parseApiSample();  
+  //if we don't have a thing configured, show an error
+  if(thing == null)
+    return showError("Configure a 'Thing'");
 
-    //poll for the position
-    valuePollingScheduler();
-  }
+  //see if we have valid positional attributes for the thing
+  var attr = getAttributes(thing.attributes)
+  if(!attr.valid)
+    return showError("'Thing' is missing the required attributes");
+
+  //initialize the map
+  initMap();
+
+	//update the position on the map
+  updatePosition();
+  // updatePosition({latitude: 33.15, longitude: -96.87}) //position for debugging
+	
+  
+  //subscribe to attribute events
+  thing.subscribe([attr.latitude, attr.longitude])
+  
+  //and react to attribute value updates (todo: debounce since both are likely to update roughly simultaneously)
+  thing.attributes[attr.latitude].onValue(updatePosition)
+  thing.attributes[attr.longitude].onValue(updatePosition)
+  
+  
 });
 
+  
 
 
+var LONG_ATTRIBUTES = ['longitude', 'lng', 'long'];
+var LAT_ATTRIBUTES = ['latitude', 'lat'];
+  
+function getAttributes(source){
+  //try to find a matching latitude / longitude attribute set
+  var longitude = LONG_ATTRIBUTES.find(source.hasOwnProperty, source)
+  var latitude = LAT_ATTRIBUTES.find(source.hasOwnProperty, source)
 
-function getCoordinates(pos){
-  if(pos && pos.lng && pos.lat) return [pos.lng, pos.lat]
-  return [defaultLongitude, defaultLatitude];
+  return {
+    longitude, 
+    latitude, 
+    valid: longitude && latitude, //valid if it has both
+  }
 }
 
+function getCoordinates(position){
+  var sources = [position, thing, DEFAULT_POSITION];
+  
+  //order of preference: explicit position -> thing -> defaults
+  for(var source of sources){
+    //if the source doesn't exist, move onto the next one
+    if(source == null)
+      continue; 
+    
+    //determine if we're looking at a 'Thing' as it has slightly different checks
+    var isThing = source === thing;
+    if(isThing)
+      source = source.attributes; //check the attributes object for Things
+    
+    //try to find a matching latitude / longitude attribute set
+    var attr = getAttributes(source);
+
+    //if we don't have both, then continue to the next source
+    if(!attr.valid)
+      continue;
+
+    //try to get the values from the appropriate source location (thing attribute or directly on the source)
+    var longitude = isThing ? thing.attributes[attr.longitude].value : source[attr.longitude];
+    var latitude = isThing ? thing.attributes[attr.latitude].value : source[attr.latitude];
+
+    //if we have both, return the set (always will at least get this with the defaults)
+    if(latitude != null && longitude != null)
+      return [longitude, latitude]
+  }
+}
+
+
+//if there is a map source specified (for the map style), try to get it
 function getMapSource(){
-  console.log(tileSettings.mapSource)
-  if(tileSettings && tileSettings.mapSource != null && tileSettings.mapSource != ""){
+  console.log(mapSource)
+  if(mapSource != null && mapSource != ""){
     //if the user provided a raw map source XYZ template, use it
-    if(tileSettings.mapSource.indexOf('http') === 0){
-      return new ol.source.XYZ({ url: tileSettings.mapSource });  
+    if(mapSource.indexOf('http') === 0){
+      return new ol.source.XYZ({ url: mapSource });  
     }
     //otherwise see if the key matches one of our sources
-    else if(tileSettings.mapSource in mapLayerSources){
-      return new ol.source.XYZ({ url: mapLayerSources[tileSettings.mapSource] });  
+    else if(mapSource in mapLayerSources){
+      return new ol.source.XYZ({ url: mapLayerSources[mapSource] });  
     }
     //unknown - log as warning to console
     else{
-      console.warn(`Unknown map source '${tileSettings.mapSource}'`);
+      console.warn(`Unknown map source '${mapSource}'`);
       stio.showToast("Unknown map source. Valid sources: bright, light, dark", "blue");
     }
   }
@@ -153,6 +133,7 @@ function getMapSource(){
     
 }
 
+  
 function initMap() {  
   console.log(`Initializing map element`);
   map = new ol.Map({
@@ -164,35 +145,35 @@ function initMap() {
     ],
     view: new ol.View({
       center: ol.proj.fromLonLat(getCoordinates()),
-      zoom: defaultZoom //starting zoomed out
+      zoom: DEFAULT_ZOOM //starting zoomed out
     })
   }); 
 }
 function clearMarker(){
   //Remove the existing marker from the map
-  // if(marker) marker.setMap(null);  
-  if(marker) map.removeLayer(marker); //remove the marker layer
+  if(marker) 
+    map.removeLayer(marker); //remove the marker layer
 }
 
-function setMapCenter(pos){
+function setMapCenter(position){
   /* 
 	animate the map 'center' using the maps 'view'
      https://openlayers.org/en/latest/apidoc/module-ol_View-View.html
   */
   map.getView().animate({
-    center: ol.proj.fromLonLat([pos.lng,pos.lat]),
+    center: ol.proj.fromLonLat(getCoordinates(position)),
     zoom: 12 //zoom in once we have a point
   });
 }
 
 function getIcon(){
   //if the user provided an image URL for the icon
-  if(tileSettings.avatarUrl != null && tileSettings.avatarUrl != ""){
+  if(avatarUrl != null && avatarUrl != ""){
     return {
       anchor: [0.5, 0.5], //centered on the image
       // anchorXUnits: 'fraction',
       // anchorYUnits: 'fraction',
-      src: tileSettings.avatarUrl
+      src: avatarUrl
     }
   }
   //otherwise, use the default marker
@@ -204,13 +185,11 @@ function getIcon(){
   }
 }
 
-function setMarker(map, pos) {
+function updatePosition(position) {
   clearMarker();
 
-  console.log('Setting marker with position', pos);
-
-  const iconFeature = new ol.Feature({
-    geometry: new ol.geom.Point(ol.proj.fromLonLat([pos.lng,pos.lat])),
+  var iconFeature = new ol.Feature({
+    geometry: new ol.geom.Point(ol.proj.fromLonLat(getCoordinates(position))),
     name: 'Home',
   });
     
@@ -227,43 +206,67 @@ function setMarker(map, pos) {
 
   //center the map on the new position
   setTimeout(function(){
-  	setMapCenter(pos);  
+  	setMapCenter(position);  
   }, 0); //recenter on the next tick so small marker movements don't get dropped during minor animation
   
 }
 
-function getCurrentPos(){
-  var url = getBaseUrl() + `/devices/${tileSettings.deviceId}`
-  var config = getAxiosConfig();
-  //Get the device value (geolocation) using Hubitat Maker API
-  axios.get(url, config).then(function(res){ 
-    var latAttr;
-    for(var i = 0; i < res.data.attributes.length; i++){
-      if(res.data.attributes[i].name === "latitude"){
-        latAttr = res.data.attributes[i];
-        break;
-      }      
-    }     
-    var lngAttr;
-    for(var j = 0; j < res.data.attributes.length; j++){
-      if(res.data.attributes[j].name === "longitude"){
-        lngAttr = res.data.attributes[j];
-      }
-    }    
-    if(latAttr && lngAttr){
-      console.log(`Received geolocation value. Lat: ${latAttr.currentValue}, Lng: ${lngAttr.currentValue}`);
-      var pos ={
-        lat: latAttr.currentValue,
-        lng: lngAttr.currentValue,
-      }
-      //Update the marker in the map
-      setMarker(map, pos);
-    }
-  });
+//helper method for logging an error to console, showing a toast, and updating the tile to display 'Error'
+function showError(message){
+  console.error(message);
+  // stio.showToast(message, "red");
+  messageEl.innerHTML = "Error: " + message;
+  messageEl.style.display = 'block';
 }
-function valuePollingScheduler(){
-  getCurrentPos();
-  console.log("polling value in 5 minutes");
-  setTimeout(valuePollingScheduler, 300000);
+  
+function clearError(){
+  messageEl.innerHTML = "";
+  messageEl.style.display = 'none';
 }
 </script>
+
+
+<style> 
+  html, body { margin: 0; padding: 0; height: 100%; }
+  .map {
+    height: 100%;
+    width: 100%;
+  }
+  #message {
+    position: absolute;
+    background: #d80000; /* red */
+		bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0.5em;
+    padding: 0.25em 0.5em;
+    border-radius: 3px;
+    max-width: calc(100% - 2em);
+    display:none;
+  }
+</style>
+
+
+<!-- Do not edit below -->
+<script type="application/json" id="tile-settings">
+{
+  "schema": "0.2.0",
+  "settings": [
+    {"type": "THING", "name": "thing", "label": "Thing", "filters": {}},
+    {
+      "type": "LABEL",
+      "name": "thingLabel",
+      "value": "You MUST select a thing with latitude and longitude attributes. <a href=''>Learn More</a>"
+    },
+    {
+      "name": "avatarUrl",
+      "type": "STRING",
+      "label": "Avatar Image Url (optional)"
+    },
+    {"name": "mapSource", "type": "STRING", "label": "Map Source (optional)"}
+  ],
+  "name": "Map: Latitude and Longitude Source",
+  "dimensions": {"height": 2, "width": 2}
+}
+</script>
+<!-- Do not edit above -->
