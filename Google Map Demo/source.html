@@ -63,8 +63,8 @@ stio.ready().then(function(data){
   
 
 
-var LONG_ATTRIBUTES = ['longitude', 'lng', 'long'];
-var LAT_ATTRIBUTES = ['latitude', 'lat'];
+var LONG_ATTRIBUTES = ['longitude', 'lng', 'long', 'longitudeMeasurement'];
+var LAT_ATTRIBUTES = ['latitude', 'lat', 'latitudeMeasurement'];
   
 function getAttributes(source){
   //try to find a matching latitude / longitude attribute set
@@ -270,3 +270,4 @@ function clearError(){
 }
 </script>
 <!-- Do not edit above -->
+ 
