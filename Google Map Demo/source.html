@@ -18,6 +18,7 @@ var DEFAULT_POSITION = {
 }
 var DEFAULT_ZOOM = 5;
 
+//Use the 'Map Source' setting on each tile instance to change the visual theme used for the map
 var mapLayerSources = {
   'bright': 'https://{a-d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', //'cartodb/voyager'
   'light': 'https://{a-d}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png', //'cartodb/positron'
@@ -62,15 +63,16 @@ stio.ready().then(function(data){
 
   
 
-
-var LONG_ATTRIBUTES = ['longitude', 'lng', 'long', 'longitudeMeasurement'];
+//Various attribute aliases for `latitude` and `longitude` in rough order of preference
+var LONG_ATTRIBUTES = ['longitude', 'lng', 'long', 'lon', 'longitudeMeasurement'];
 var LAT_ATTRIBUTES = ['latitude', 'lat', 'latitudeMeasurement'];
   
 function getAttributes(source){
-  //try to find a matching latitude / longitude attribute set
+  //try to find a matching latitude / longitude attribute set based on the attribute aliases
   var longitude = LONG_ATTRIBUTES.find(source.hasOwnProperty, source)
   var latitude = LAT_ATTRIBUTES.find(source.hasOwnProperty, source)
 
+  //return the matching attribute name (alias) for `longitude` and `latitude` along with a boolean confirming we have both
   return {
     longitude, 
     latitude, 
